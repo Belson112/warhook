@@ -34,3 +34,4 @@
 *.app
 **/WarHook/trash/
 **/x64/
+**/.vs/
