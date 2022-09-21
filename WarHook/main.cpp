@@ -4,10 +4,11 @@
 #include "classes.h"
 #include "font.h"
 
-constexpr auto off_cGame = 0x4316E28;
-constexpr auto off_localplayer = 0x41E7DE8;
-constexpr auto off_isScoping = 0x41E1F68;
-
+constexpr auto off_cGame = 0x4318E28;
+constexpr auto off_localplayer = 0x41E9DE8;
+constexpr auto off_isScoping = 0x41E3F68;
+constexpr auto off_scrW = 0x436C8A0;
+constexpr auto off_scrH = 0x436C8A4;
 
 	
 void SetupImGuiStyle()
@@ -88,8 +89,8 @@ float Distance(Vector3 target, Vector3 localplayer)
 
 uintptr_t modulebase = (uintptr_t)GetModuleHandle(NULL);
 uintptr_t cGame = *(uintptr_t*)(modulebase + off_cGame);
-const int scrW = *(int*)(modulebase + 0x436A8A0);
-const int scrH = *(int*)(modulebase + 0x436A8A4);
+const int scrW = *(int*)(modulebase + off_scrW);
+const int scrH = *(int*)(modulebase + off_scrH);
 
 const Vector2 scrsize = { (float)scrW,(float)scrH };
 bool WorldToScreen(const Vector3& in, Vector3& out) noexcept
