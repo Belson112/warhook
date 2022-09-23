@@ -65,11 +65,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="kiero\minhook\dll_resources\MinHook.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="kiero\minhook\src\buffer.h">
       <Filter>kiero</Filter>
     </ClInclude>

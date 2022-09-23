@@ -4,11 +4,11 @@
 #include "classes.h"
 #include "font.h"
 
-constexpr auto off_cGame = 0x4318E28;
-constexpr auto off_localplayer = 0x41E9DE8;
-constexpr auto off_isScoping = 0x41E3F68;
-constexpr auto off_scrW = 0x436C8A0;
-constexpr auto off_scrH = 0x436C8A4;
+constexpr auto off_cGame = 0x4317E28;
+constexpr auto off_localplayer = 0x41E8DE8;
+constexpr auto off_isScoping = 0x41E2F68;
+constexpr auto off_scrW = 0x436B8A0;
+constexpr auto off_scrH = 0x436B8A4;
 
 	
 void SetupImGuiStyle()

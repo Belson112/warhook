@@ -164,9 +164,6 @@
     <None Include="kiero\minhook\dll_resources\MinHook.def" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="kiero\minhook\dll_resources\MinHook.rc" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="classes.h" />
     <ClInclude Include="font.h" />
     <ClInclude Include="imgui\imconfig.h" />
