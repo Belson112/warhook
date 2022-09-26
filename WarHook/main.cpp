@@ -4,13 +4,6 @@
 #include "classes.h"
 #include "font.h"
 
-constexpr auto off_cGame = 0x4317E28;
-constexpr auto off_localplayer = 0x41E8DE8;
-constexpr auto off_isScoping = 0x41E2F68;
-constexpr auto off_scrW = 0x436B8A0;
-constexpr auto off_scrH = 0x436B8A4;
-
-	
 void SetupImGuiStyle()
 {
 	ImGui::GetStyle().FrameRounding = 6.f;
@@ -87,8 +80,97 @@ float Distance(Vector3 target, Vector3 localplayer)
 	return distance;
 }
 
+std::uint8_t* Scan(const char* signature) noexcept
+{
+	static const auto patternToByte = [](const char* pattern) noexcept -> std::vector<int>
+	{
+		auto bytes = std::vector<int>{ };
+		auto start = const_cast<char*>(pattern);
+		auto end = const_cast<char*>(pattern) + std::strlen(pattern);
+
+		for (auto current = start; current < end; ++current)
+		{
+			if (*current == '?')
+			{
+				++current;
+
+				if (*current == '?')
+					++current;
+
+				bytes.push_back(-1);
+			}
+			else
+				bytes.push_back(std::strtoul(current, &current, 16));
+
+		}
+
+		return bytes;
+	};
+
+	static const auto handle = ::GetModuleHandleA("aces.exe");
+
+	if (!handle)
+		return nullptr;
+
+	auto dosHeader = reinterpret_cast<PIMAGE_DOS_HEADER>(handle);
+	auto ntHeaders =
+		reinterpret_cast<PIMAGE_NT_HEADERS>(reinterpret_cast<std::uint8_t*>(handle) + dosHeader->e_lfanew);
+
+	auto size = ntHeaders->OptionalHeader.SizeOfImage;
+	auto bytes = patternToByte(signature);
+	auto scanBytes = reinterpret_cast<std::uint8_t*>(handle);
+
+	auto s = bytes.size();
+	auto d = bytes.data();
+
+	for (auto i = 0ul; i < size - s; ++i)
+	{
+		bool found = true;
+
+		for (auto j = 0ul; j < s; ++j)
+		{
+			if (scanBytes[i + j] != d[j] && d[j] != -1)
+			{
+				found = false;
+				break;
+			}
+		}
+
+		if (found)
+			return &scanBytes[i];
+	}
+
+	return nullptr;
+}
+
+const auto get = [](const char* signature) noexcept -> std::uintptr_t
+{
+	return reinterpret_cast<std::uintptr_t>(Scan(signature));
+};
+
+template<typename T = std::uintptr_t>
+constexpr T GetOffset(std::uintptr_t address, int offset)
+{
+	return (T)(address + (int)((*(int*)(address + offset) + offset) + sizeof(int)));
+}
+
 uintptr_t modulebase = (uintptr_t)GetModuleHandle(NULL);
-uintptr_t cGame = *(uintptr_t*)(modulebase + off_cGame);
+uintptr_t aGame = (GetOffset<std::uintptr_t>(get("48 8B 0D ? ? ? ? 48 8B 01 FF 50 ? 48 85 ED 74 ? 0F 31"), 0x3));
+uintptr_t aLocalPlayer = (GetOffset<std::uintptr_t>(get("48 8B 15 ? ? ? ? 48 85 D2 74 ? 41 BA ? ? ? ? F6 82 ? ? ? ? ? 75"), 0x3));
+uintptr_t aScrW = (GetOffset<std::uintptr_t>(get("48 89 05 ? ? ? ? 8a 84 24 ? ? ? ? 88 05 ? ? ? ? 48 8b 44 24 ? 48 8b 4c 24 ? 48 89 05 ? ? ? ? 48 89 0d ? ? ? ? 83 3d"), 0x3));
+uintptr_t aIsScoping = (GetOffset<std::uintptr_t>(get("80 3d ? ? ? ? ? 74 ? 48 8b 05 ? ? ? ? 48 8b 80 ? ? ? ? 8b 88"), 0x3));
+
+
+
+uintptr_t off_game = aGame - modulebase;
+uintptr_t off_localplayer = aLocalPlayer - modulebase;
+uintptr_t off_scrW = aScrW - modulebase;
+uintptr_t off_scrH = off_scrW + 0x4;
+uintptr_t off_isScoping = aIsScoping - modulebase;
+
+
+
+uintptr_t cGame = *(uintptr_t*)(modulebase + off_game);
 const int scrW = *(int*)(modulebase + off_scrW);
 const int scrH = *(int*)(modulebase + off_scrH);
 
@@ -631,6 +713,7 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 					ImGui::SliderFloat("Radius", &off_radius, 0.0f, 1000.0f);
 					ImGui::PopStyleVar();
 				}
+				//text all offsets
 				ImGui::EndTabItem();
 			}
 			ImGui::SetNextItemWidth(180.f);
