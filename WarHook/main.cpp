@@ -155,10 +155,10 @@ constexpr T GetOffset(std::uintptr_t address, int offset)
 }
 
 uintptr_t modulebase = (uintptr_t)GetModuleHandle(NULL);
-uintptr_t aGame = (GetOffset<std::uintptr_t>(get("48 8B 0D ? ? ? ? 48 8B 01 FF 50 ? 48 85 ED 74 ? 0F 31"), 0x3));
+uintptr_t aGame = (GetOffset<std::uintptr_t>(get("48 8B 05 ? ? ? ? F2 0F 10 4F 08"), 0x3));
 uintptr_t aLocalPlayer = (GetOffset<std::uintptr_t>(get("48 8B 15 ? ? ? ? 48 85 D2 74 ? 41 BA ? ? ? ? F6 82 ? ? ? ? ? 75"), 0x3));
-uintptr_t aScrW = (GetOffset<std::uintptr_t>(get("48 89 05 ? ? ? ? 8a 84 24 ? ? ? ? 88 05 ? ? ? ? 48 8b 44 24 ? 48 8b 4c 24 ? 48 89 05 ? ? ? ? 48 89 0d ? ? ? ? 83 3d"), 0x3));
-uintptr_t aIsScoping = (GetOffset<std::uintptr_t>(get("80 3d ? ? ? ? ? 74 ? 48 8b 05 ? ? ? ? 48 8b 80 ? ? ? ? 8b 88"), 0x3));
+uintptr_t aScrW = (GetOffset<std::uintptr_t>(get("89 05 ? ? ? ? 8b 0d ? ? ? ? 89 0d ? ? ? ? 8b 15 ? ? ? ? f3 0f 2a c2 f3 0f 11 05 ? ? ? ? 8b 35"), 0x2));
+uintptr_t aIsScoping = (GetOffset<std::uintptr_t>(get("88 0d ? ? ? ? 48 8b 05 ? ? ? ? 48 8b 80"), 0x2));
 
 
 
@@ -177,8 +177,9 @@ const int scrH = *(int*)(modulebase + off_scrH);
 const Vector2 scrsize = { (float)scrW,(float)scrH };
 bool WorldToScreen(const Vector3& in, Vector3& out) noexcept
 {
-	const ViewMatrix& mat = *(ViewMatrix*)(cGame + 0x760);
-	
+	const uintptr_t mat_addr = *(uintptr_t*)(cGame + 0x7b0) + 0x268;
+	const ViewMatrix& mat = *(ViewMatrix*)mat_addr;
+
 	float width = mat[0][3] * in.x + mat[1][3] * in.y + mat[2][3] * in.z + mat[3][3];
 
 	bool visible = width >= 0.1f;
@@ -199,7 +200,7 @@ bool WorldToScreen(const Vector3& in, Vector3& out) noexcept
 	out.x = (scrsize.x / 2 * nx) + (nx + scrsize.x / 2);
 	out.y = -(scrsize.y / 2 * ny) + (ny + scrsize.y / 2);
 	out.z = nz;
-	
+
 	return true;
 }
 
@@ -219,7 +220,7 @@ void InitImGui()
 {
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
-	def_main = io.Fonts->AddFontFromMemoryTTF(myfont, sizeof(myfont),15.f, nullptr, io.Fonts->GetGlyphRangesCyrillic());
+	def_main = io.Fonts->AddFontFromMemoryTTF(myfont, sizeof(myfont), 15.f, nullptr, io.Fonts->GetGlyphRangesCyrillic());
 	med_main = io.Fonts->AddFontFromMemoryTTF(myfont, sizeof(myfont), 20.f, nullptr, io.Fonts->GetGlyphRangesCyrillic());
 	big_main = io.Fonts->AddFontFromMemoryTTF(myfont, sizeof(myfont), 30.f, nullptr, io.Fonts->GetGlyphRangesCyrillic());
 	ImGui::GetIO().Fonts->Build();
@@ -290,7 +291,7 @@ void draw3dbox(Matrix3x3 rotation, Vector3 bbmin, Vector3 bbmax, Vector3 positio
 void drawOffscreenCentered(Vector3 origin, float distance)
 {
 	ImRect screen_rect = { 0.0f, 0.0f, scrsize.x, scrsize.y };
-	auto angle = atan2((scrsize.y /  2) - origin.y, (scrsize.x / 2) - origin.x);
+	auto angle = atan2((scrsize.y / 2) - origin.y, (scrsize.x / 2) - origin.x);
 	angle += origin.z > 0 ? M_PI : 0.0f;
 
 	ImVec2 arrow_center{
@@ -354,7 +355,7 @@ void ESP()
 	Player* localplayer = *(Player**)(modulebase + off_localplayer);
 	bool isScoping = *(bool*)(modulebase + off_isScoping);
 	char* curmap = *(char**)(cGame + 0x1d0);
-	
+
 	if (localplayer->IsinHangar())
 	{
 		if (localplayer->ControlledUnit == NULL or localplayer->ControlledUnit->UnitInfo == NULL)
@@ -407,177 +408,177 @@ void ESP()
 		}
 		return;
 	}
-		
+
 	const auto screen_center_x = scrsize.x / 2;
 	const auto screen_center_y = scrsize.y / 2;
-	
+
 	for (auto i = 0; i < list.unitCount; ++i)
 	{
-			const auto unit = list.unitList->units[i];
-			if (!unit)
-				continue;
-			const auto player = unit->PlayerInfo;
-			
-			const auto local = localplayer->ControlledUnit;
-			if (!local)
-				continue;
-			if (unit->TeamNum == local->TeamNum)
-				continue;
-			if (unit->Position.x == 0)
-				continue;
-			const auto draw = ImGui::GetBackgroundDrawList();
-			const auto vehicleType = unit->UnitInfo->unitType;
-			if (strcmp(vehicleType, "exp_bomber") == 0 or strcmp(vehicleType, "exp_assault") == 0 or strcmp(vehicleType, "exp_fighter") == 0)
-			{
-				if (!show_planes)
-				{
-					continue;
-				}
-				
-			}
-				
-			
-			
-			auto position = unit->Position;
-			auto distance = Distance(position, localplayer->ControlledUnit->Position);
-			auto name = u8"";
-			name = (char8_t*)(unit->UnitInfo->ShortName);
-			auto text = std::format("{}  | {:.{}f} km", (char*)(name), distance, 2);
-			auto size = ImGui::CalcTextSize(text.c_str());
-			
-			int count = (16 - (unit->ReloadTimer));
-			constexpr float stat = (10.f / 16);
-			float progress = ((stat * count) * 0.1f);
-			
-			if (player)
-			{
-				if (!unit->UnitState == 0 or !player->IsAlive())
-					continue;
-				const auto& rotation = unit->RotationMatrix;
-				const auto& bbmin = unit->BBMin;
-				const auto& bbmax = unit->BBMax;
+		const auto unit = list.unitList->units[i];
+		if (!unit)
+			continue;
+		const auto player = unit->PlayerInfo;
 
-				draw3dbox(rotation, bbmin, bbmax, position, unit->Invulnerable);
-				
-				Vector3 origin = { };
-				if (WorldToScreen(position, origin))
+		const auto local = localplayer->ControlledUnit;
+		if (!local)
+			continue;
+		if (unit->TeamNum == local->TeamNum)
+			continue;
+		if (unit->Position.x == 0)
+			continue;
+		const auto draw = ImGui::GetBackgroundDrawList();
+		const auto vehicleType = unit->UnitInfo->unitType;
+		if (strcmp(vehicleType, "exp_bomber") == 0 or strcmp(vehicleType, "exp_assault") == 0 or strcmp(vehicleType, "exp_fighter") == 0)
+		{
+			if (!show_planes)
+			{
+				continue;
+			}
+
+		}
+
+
+
+		auto position = unit->Position;
+		auto distance = Distance(position, localplayer->ControlledUnit->Position);
+		auto name = u8"";
+		name = (char8_t*)(unit->UnitInfo->ShortName);
+		auto text = std::format("{}  | {:.{}f} km", (char*)(name), distance, 2);
+		auto size = ImGui::CalcTextSize(text.c_str());
+
+		int count = (16 - (unit->ReloadTimer));
+		constexpr float stat = (10.f / 16);
+		float progress = ((stat * count) * 0.1f);
+
+		if (player)
+		{
+			if (!unit->UnitState == 0 or !player->IsAlive())
+				continue;
+			const auto& rotation = unit->RotationMatrix;
+			const auto& bbmin = unit->BBMin;
+			const auto& bbmax = unit->BBMax;
+
+			draw3dbox(rotation, bbmin, bbmax, position, unit->Invulnerable);
+
+			Vector3 origin = { };
+			if (WorldToScreen(position, origin))
+			{
+				if (origin.x < 0 || origin.x > scrsize.x || origin.y < 0 || origin.y > scrsize.y)
 				{
-					if (origin.x < 0 || origin.x > scrsize.x || origin.y < 0 || origin.y > scrsize.y)
+					if (show_offscreen)
 					{
-						if (show_offscreen)
+						if (!isScoping)
 						{
-							if (!isScoping)
-							{
-								drawOffscreenCentered(origin, distance);
-							}
-							continue;
+							drawOffscreenCentered(origin, distance);
 						}
-						
 						continue;
 					}
 
-					draw->AddRectFilled({ origin.x - (size.x * 0.5f) - 5, origin.y + 5 },
-						{ origin.x + (size.x * 0.5f) + 5, origin.y + 10 + (size.y * 0.5f) + 5 },
+					continue;
+				}
+
+				draw->AddRectFilled({ origin.x - (size.x * 0.5f) - 5, origin.y + 5 },
+					{ origin.x + (size.x * 0.5f) + 5, origin.y + 10 + (size.y * 0.5f) + 5 },
+					ImColor(0, 0, 0, 150));
+
+				draw->AddText({ origin.x - (size.x * 0.5f), origin.y + (size.y * 0.5f) },
+					ImColor(255, 255, 255),
+					text.c_str());
+
+				if (show_reload)
+				{
+					draw->AddRectFilled({ origin.x - (size.x * 0.5f) - 5, origin.y + 10 + (size.y * 0.5f) + 5 },
+						{ origin.x + (size.x * 0.5f) + 5, origin.y + 10 + (size.y * 0.3f) + 10 },
 						ImColor(0, 0, 0, 150));
-
-					draw->AddText({ origin.x - (size.x * 0.5f), origin.y + (size.y * 0.5f) },
-						ImColor(255, 255, 255),
-						text.c_str());
-
-					if (show_reload)
+					if (progress == 1)
 					{
 						draw->AddRectFilled({ origin.x - (size.x * 0.5f) - 5, origin.y + 10 + (size.y * 0.5f) + 5 },
-							{ origin.x + (size.x * 0.5f) + 5, origin.y + 10 + (size.y * 0.3f) + 10 },
-							ImColor(0, 0, 0, 150));
-						if (progress == 1)
-						{
-							draw->AddRectFilled({ origin.x - (size.x * 0.5f) - 5, origin.y + 10 + (size.y * 0.5f) + 5 },
-								{ origin.x - (size.x * 0.5f) + (progress * size.x) + 5, origin.y + 10 + (size.y * 0.5f) + 10 },
-								ImColor(0, 255, 0, 200));
-						}
-						else
-						{
-							draw->AddRectFilled({ origin.x - (size.x * 0.5f) - 5, origin.y + 10 + (size.y * 0.5f) + 5 },
-								{ origin.x - (size.x * 0.5f) + (progress * size.x) + 5, origin.y + 10 + (size.y * 0.5f) + 10 },
-								ImColor(255, 0, 0, 200));
-						}
+							{ origin.x - (size.x * 0.5f) + (progress * size.x) + 5, origin.y + 10 + (size.y * 0.5f) + 10 },
+							ImColor(0, 255, 0, 200));
 					}
-
-				}
-			}
-			if (show_bots)
-			{
-				if (strcmp(curmap, "levels/firing_range.bin") != 0)
-					continue;
-				
-				if (!unit->UnitState == 0 )
-					continue;
-				
-				if (!show_planes)
-				{
-					if (strcmp(vehicleType, "exp_bomber") == 0 or strcmp(vehicleType, "exp_assault") == 0 or strcmp(vehicleType, "exp_fighter") == 0)
-						continue;
-				}
-				if (strcmp(vehicleType, "exp_fortification") == 0 or strcmp(vehicleType, "exp_structure") == 0 or strcmp(vehicleType, "exp_aaa") == 0 or strcmp(vehicleType, "dummy_plane") == 0)
-					continue;
-	
-				const auto& rotation = unit->RotationMatrix;
-				const auto& bbmin = unit->BBMin;
-				const auto& bbmax = unit->BBMax;
-
-				draw3dbox(rotation, bbmin, bbmax, position, unit->Invulnerable);
-				
-				Vector3 origin = { };
-				if (WorldToScreen(position, origin))
-				{
-					if (origin.x < 0 || origin.x > scrsize.x || origin.y < 0 || origin.y > scrsize.y)
-					{
-						if (show_offscreen)
-						{
-							
-							if (!isScoping)
-							{
-								drawOffscreenCentered(origin, distance);
-							}
-							continue;
-						}
-						continue;
-					}
-					
-
-					draw->AddRectFilled({ origin.x - (size.x * 0.5f) - 5, origin.y + 5 },
-						{ origin.x + (size.x * 0.5f) + 5, origin.y + 10 + (size.y * 0.5f) + 5 },
-						ImColor(0, 0, 0, 150));
-
-					draw->AddText({ origin.x - (size.x * 0.5f), origin.y + (size.y * 0.5f) },
-						ImColor(255, 255, 255),
-						text.c_str());
-
-					if (show_reload)
+					else
 					{
 						draw->AddRectFilled({ origin.x - (size.x * 0.5f) - 5, origin.y + 10 + (size.y * 0.5f) + 5 },
-							{ origin.x + (size.x * 0.5f) + 5, origin.y + 10 + (size.y * 0.3f) + 10 },
-							ImColor(0, 0, 0, 150));
-						if (progress == 1)
-						{
-							draw->AddRectFilled({ origin.x - (size.x * 0.5f) - 5, origin.y + 10 + (size.y * 0.5f) + 5 },
-								{ origin.x - (size.x * 0.5f) + (progress * size.x) + 5, origin.y + 10 + (size.y * 0.5f) + 10 },
-								ImColor(0, 255, 0, 200));
-						}
-						else
-						{
-							draw->AddRectFilled({ origin.x - (size.x * 0.5f) - 5, origin.y + 10 + (size.y * 0.5f) + 5 },
-								{ origin.x - (size.x * 0.5f) + (progress * size.x) + 5, origin.y + 10 + (size.y * 0.5f) + 10 },
-								ImColor(255, 0, 0, 200));
-						}
+							{ origin.x - (size.x * 0.5f) + (progress * size.x) + 5, origin.y + 10 + (size.y * 0.5f) + 10 },
+							ImColor(255, 0, 0, 200));
 					}
-
 				}
-	
+
 			}
-			
+		}
+		if (show_bots)
+		{
+			if (strcmp(curmap, "levels/firing_range.bin") != 0)
+				continue;
+
+			if (!unit->UnitState == 0)
+				continue;
+
+			if (!show_planes)
+			{
+				if (strcmp(vehicleType, "exp_bomber") == 0 or strcmp(vehicleType, "exp_assault") == 0 or strcmp(vehicleType, "exp_fighter") == 0)
+					continue;
+			}
+			if (strcmp(vehicleType, "exp_fortification") == 0 or strcmp(vehicleType, "exp_structure") == 0 or strcmp(vehicleType, "exp_aaa") == 0 or strcmp(vehicleType, "dummy_plane") == 0)
+				continue;
+
+			const auto& rotation = unit->RotationMatrix;
+			const auto& bbmin = unit->BBMin;
+			const auto& bbmax = unit->BBMax;
+
+			draw3dbox(rotation, bbmin, bbmax, position, unit->Invulnerable);
+
+			Vector3 origin = { };
+			if (WorldToScreen(position, origin))
+			{
+				if (origin.x < 0 || origin.x > scrsize.x || origin.y < 0 || origin.y > scrsize.y)
+				{
+					if (show_offscreen)
+					{
+
+						if (!isScoping)
+						{
+							drawOffscreenCentered(origin, distance);
+						}
+						continue;
+					}
+					continue;
+				}
+
+
+				draw->AddRectFilled({ origin.x - (size.x * 0.5f) - 5, origin.y + 5 },
+					{ origin.x + (size.x * 0.5f) + 5, origin.y + 10 + (size.y * 0.5f) + 5 },
+					ImColor(0, 0, 0, 150));
+
+				draw->AddText({ origin.x - (size.x * 0.5f), origin.y + (size.y * 0.5f) },
+					ImColor(255, 255, 255),
+					text.c_str());
+
+				if (show_reload)
+				{
+					draw->AddRectFilled({ origin.x - (size.x * 0.5f) - 5, origin.y + 10 + (size.y * 0.5f) + 5 },
+						{ origin.x + (size.x * 0.5f) + 5, origin.y + 10 + (size.y * 0.3f) + 10 },
+						ImColor(0, 0, 0, 150));
+					if (progress == 1)
+					{
+						draw->AddRectFilled({ origin.x - (size.x * 0.5f) - 5, origin.y + 10 + (size.y * 0.5f) + 5 },
+							{ origin.x - (size.x * 0.5f) + (progress * size.x) + 5, origin.y + 10 + (size.y * 0.5f) + 10 },
+							ImColor(0, 255, 0, 200));
+					}
+					else
+					{
+						draw->AddRectFilled({ origin.x - (size.x * 0.5f) - 5, origin.y + 10 + (size.y * 0.5f) + 5 },
+							{ origin.x - (size.x * 0.5f) + (progress * size.x) + 5, origin.y + 10 + (size.y * 0.5f) + 10 },
+							ImColor(255, 0, 0, 200));
+					}
+				}
+
+			}
+
+		}
+
 	}
-	
+
 }
 
 void ZoomMod()
@@ -608,17 +609,15 @@ void ZoomMod()
 
 void showWarningwindow()
 {
-	
-	
 	auto text1 = "THIS SOFTWARE DISTRIBUTED FOR FREE.";
 	auto text2 = "IF YOU PAID FOR THIS SOFTWARE - YOU GOT SCAMMED.";
 	ImGui::SetNextWindowSize({ scrsize.x, scrsize.y });
 	ImGui::SetNextWindowPos({ 0, 0 });
 	auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar;
-	ImGui::Begin("WARNING",nullptr,flags);
+	ImGui::Begin("WARNING", nullptr, flags);
 	ImGui::PushFont(big_main);
 	auto textWidth1 = ImGui::CalcTextSize(text1).x;
-	ImGui::SetCursorPos(ImVec2((scrsize.x  -  textWidth1)* 0.5f,100));
+	ImGui::SetCursorPos(ImVec2((scrsize.x - textWidth1) * 0.5f, 100));
 	ImGui::Text(text1);
 	auto textWidth2 = ImGui::CalcTextSize(text2).x;
 	ImGui::SetCursorPosX((scrsize.x - textWidth2) * 0.5f);
@@ -667,20 +666,20 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 	{
 		open = !open;
 	}
-	
+
 
 	if (!agree)
 		showWarningwindow();
 
 	ImGui::GetIO().MouseDrawCursor = open;
-	
+
 	if (agree)
 	{
 		if (open)
 		{
 			ImGui::PushFont(med_main);
 			ImGui::SetNextWindowSize({ 550,350 });
-			ImGui::SetNextWindowPos({ (sizeScr.x - 550) * 0.5f, (sizeScr.y - 350) * 0.5f },ImGuiCond_FirstUseEver);
+			ImGui::SetNextWindowPos({ (sizeScr.x - 550) * 0.5f, (sizeScr.y - 350) * 0.5f }, ImGuiCond_FirstUseEver);
 			ImGui::Begin("WarHook", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
 
 			ImGui::BeginTabBar("main");
@@ -713,7 +712,6 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 					ImGui::SliderFloat("Radius", &off_radius, 0.0f, 1000.0f);
 					ImGui::PopStyleVar();
 				}
-				//text all offsets
 				ImGui::EndTabItem();
 			}
 			ImGui::SetNextItemWidth(180.f);
@@ -745,8 +743,8 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 				ImGui::PopStyleVar();
 				ImGui::PopStyleVar();
 				ImGui::EndTabItem();
-		
-				
+
+
 			}
 			ImGui::EndTabBar();
 			if (!tab_esp && !tab_misc && !tab_aimbot)
@@ -811,7 +809,7 @@ DWORD WINAPI MainThread(LPVOID lpReserved)
 	{
 		if (kiero::init(kiero::RenderType::D3D11) == kiero::Status::Success)
 		{
-			kiero::bind(8, (void**)& oPresent, hkPresent);
+			kiero::bind(8, (void**)&oPresent, hkPresent);
 			init_hook = true;
 		}
 	} while (!init_hook);
