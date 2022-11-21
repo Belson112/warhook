@@ -5,8 +5,8 @@ static bool offscreen = false;
 static bool agree = false;
 static bool open = true;
 static bool tab_esp = false;
-static bool tab_aimbot = false;
 static bool tab_misc = false;
+static bool tab_debug = false;
 static bool def_tab = true;
 static bool def_choice = false;
 
@@ -17,6 +17,11 @@ static bool show_planes = false;
 static bool show_offscreen = false;
 
 static bool zoom_mod = false;
+static bool change_hud = false;
+static bool force_crosshair = false;
+static bool force_outline = false;
+static bool force_distance = false;
+static bool force_bombsight = false;
 
 static float zoom_mult = 3.f;
 static float alt_mult = 12.f;

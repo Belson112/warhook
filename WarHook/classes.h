@@ -54,9 +54,88 @@ public:
 	uint8_t TeamNum; //0x10D8
 	char pad_10D9[15]; //0x10D9
 	class Info* UnitInfo; //0x10E8
+	char pad_10F0[168]; //0x10F0
+	class Armory* UnitWeapons; //0x1198
+	char pad_11A0[3176]; //0x11A0
+	Vector3 BodyBbMin; //0x1E08
+	Vector3 BodyBbMax; //0x1E14
 };
 
+class HUD
+{
+public:
+	char pad_0000[652]; //0x0000
+	bool penetration_crosshair; //0x028C
+	bool unit_glow; //0x028D
+	bool gunner_sight_distance; //0x028E
+	char pad_028F[69]; //0x028F
+	bool show_bombsight; //0x02D4
+};	
 
+class Armory
+{
+public:
+	char pad_0000[144]; //0x0000
+	class WeaponPositionInfo* WeaponPositionInfo; //0x0090
+	int64_t WeaponPositionInfoCount; //0x0098
+	char pad_00A0[344]; //0x00A0
+	class ControllableWeapon* ControllableWeapons; //0x01F8
+	int64_t ControllableWeaponCount; //0x0200
+	char pad_0208[400]; //0x0208
+	class Weapon** Weapons; //0x0398
+	int64_t WeaponCount; //0x03A0
+}; //Size: 0x03A8
+
+
+class WeaponPositionInfo
+{
+public:
+	class WeaponPositionInfoInternal* InternalInfo; //0x0000
+	char pad_0008[604]; //0x0008
+	Vector3 Position; //0x0264
+	char pad_0270[88]; //0x0270
+	int32_t Padding; //0x02C8
+}; //Size: 0x02CC
+
+
+class ControllableWeapon
+{
+public:
+	char pad_0000[8]; //0x0000
+	class Weapon* WeaponPtr; //0x0008
+	char pad_0010[72]; //0x0010
+	Vector2 Rotation; //0x0058
+	char pad_0060[122]; //0x0060
+	int16_t ParentIndex; //0x00DA
+	char pad_00DC[2]; //0x00DC
+	bool UseParentPitch; //0x00DE
+	char pad_00DF[425]; //0x00DF
+	int32_t Padding; //0x0288
+}; //Size: 0x0490
+
+
+class Weapon
+{
+public:
+	char pad_0000[36]; //0x0000
+	int16_t ControllableWeaponIndex; //0x0024
+	char pad_0026[106]; //0x0026
+	Vector3 Forward; //0x0090
+	Vector3 Up; //0x009C
+	Vector3 Left; //0x00A8
+}; //Size: 0x0894
+
+
+class WeaponPositionInfoInternal
+{
+public:
+	char pad_0000[52]; //0x0000
+	Vector3 Position; //0x0034
+	char pad_0040[92]; //0x0040
+	Vector3 YawPivotPosition; //0x009C
+	char pad_00A8[92]; //0x00A8
+	Vector3 PitchPivotPosition; //0x0104
+};
 
 //class UnitWeapons
 //{

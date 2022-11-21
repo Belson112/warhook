@@ -1,8 +1,13 @@
 #include "includes.h"
+
+#include "font.h"
+
 #include "main.h"
 #include "math.h"
 #include "classes.h"
-#include "font.h"
+#include "offsets.h"
+#include "sigScanner.h"
+
 
 void SetupImGuiStyle()
 {
@@ -76,105 +81,30 @@ float Distance(Vector3 target, Vector3 localplayer)
 {
 	float distance = std::sqrtf((target.x - localplayer.x) * (target.x - localplayer.x) +
 		(target.y - localplayer.y) * (target.y - localplayer.y) +
-		(target.z - localplayer.z) * (target.z - localplayer.z)) * 0.001f;
+		(target.z - localplayer.z) * (target.z - localplayer.z));
 	return distance;
 }
 
-std::uint8_t* Scan(const char* signature) noexcept
-{
-	static const auto patternToByte = [](const char* pattern) noexcept -> std::vector<int>
-	{
-		auto bytes = std::vector<int>{ };
-		auto start = const_cast<char*>(pattern);
-		auto end = const_cast<char*>(pattern) + std::strlen(pattern);
-
-		for (auto current = start; current < end; ++current)
-		{
-			if (*current == '?')
-			{
-				++current;
-
-				if (*current == '?')
-					++current;
-
-				bytes.push_back(-1);
-			}
-			else
-				bytes.push_back(std::strtoul(current, &current, 16));
-
-		}
-
-		return bytes;
-	};
-
-	static const auto handle = ::GetModuleHandleA("aces.exe");
-
-	if (!handle)
-		return nullptr;
-
-	auto dosHeader = reinterpret_cast<PIMAGE_DOS_HEADER>(handle);
-	auto ntHeaders =
-		reinterpret_cast<PIMAGE_NT_HEADERS>(reinterpret_cast<std::uint8_t*>(handle) + dosHeader->e_lfanew);
-
-	auto size = ntHeaders->OptionalHeader.SizeOfImage;
-	auto bytes = patternToByte(signature);
-	auto scanBytes = reinterpret_cast<std::uint8_t*>(handle);
-
-	auto s = bytes.size();
-	auto d = bytes.data();
-
-	for (auto i = 0ul; i < size - s; ++i)
-	{
-		bool found = true;
-
-		for (auto j = 0ul; j < s; ++j)
-		{
-			if (scanBytes[i + j] != d[j] && d[j] != -1)
-			{
-				found = false;
-				break;
-			}
-		}
-
-		if (found)
-			return &scanBytes[i];
-	}
-
-	return nullptr;
-}
-
-const auto get = [](const char* signature) noexcept -> std::uintptr_t
-{
-	return reinterpret_cast<std::uintptr_t>(Scan(signature));
-};
-
-template<typename T = std::uintptr_t>
-constexpr T GetOffset(std::uintptr_t address, int offset)
-{
-	return (T)(address + (int)((*(int*)(address + offset) + offset) + sizeof(int)));
-}
-
 uintptr_t modulebase = (uintptr_t)GetModuleHandle(NULL);
-uintptr_t aGame = (GetOffset<std::uintptr_t>(get("48 8B 05 ? ? ? ? F2 0F 10 4F 08"), 0x3));
-uintptr_t aLocalPlayer = (GetOffset<std::uintptr_t>(get("48 8B 15 ? ? ? ? 48 85 D2 74 ? 41 BA ? ? ? ? F6 82 ? ? ? ? ? 75"), 0x3));
-uintptr_t aScrW = (GetOffset<std::uintptr_t>(get("89 05 ? ? ? ? 8b 0d ? ? ? ? 89 0d ? ? ? ? 8b 15 ? ? ? ? f3 0f 2a c2 f3 0f 11 05 ? ? ? ? 8b 35"), 0x2));
-uintptr_t aIsScoping = (GetOffset<std::uintptr_t>(get("88 0d ? ? ? ? 48 8b 05 ? ? ? ? 48 8b 80"), 0x2));
-
-
+uintptr_t aGame = (GetOffset<std::uintptr_t>(get(sigs::Game), 0x3));
+uintptr_t aLocalPlayer = (GetOffset<std::uintptr_t>(get(sigs::LocalPlayer), 0x3));
+uintptr_t aScrW = (GetOffset<std::uintptr_t>(get(sigs::ScreenWidth), 0x2));
+uintptr_t aIsScoping = (GetOffset<std::uintptr_t>(get(sigs::IsScoping), 0x2));
+uintptr_t aHudInfo = (GetOffset<std::uintptr_t>(get(sigs::HudInfo), 0x3));
 
 uintptr_t off_game = aGame - modulebase;
 uintptr_t off_localplayer = aLocalPlayer - modulebase;
 uintptr_t off_scrW = aScrW - modulebase;
 uintptr_t off_scrH = off_scrW + 0x4;
 uintptr_t off_isScoping = aIsScoping - modulebase;
-
-
+uintptr_t off_hudInfo = aHudInfo - modulebase;
 
 uintptr_t cGame = *(uintptr_t*)(modulebase + off_game);
 const int scrW = *(int*)(modulebase + off_scrW);
 const int scrH = *(int*)(modulebase + off_scrH);
 
 const Vector2 scrsize = { (float)scrW,(float)scrH };
+
 bool WorldToScreen(const Vector3& in, Vector3& out) noexcept
 {
 	const uintptr_t mat_addr = *(uintptr_t*)(cGame + 0x7b0) + 0x268;
@@ -232,7 +162,7 @@ void InitImGui()
 }
 
 
-void draw3dbox(Matrix3x3 rotation, Vector3 bbmin, Vector3 bbmax, Vector3 position, float Invulnerable)
+void draw3dbox(Matrix3x3 rotation, Vector3 bbmin, Vector3 bbmax, Vector3 position, float Invulnerable , ImColor color)
 {
 	Vector3 ax[6];
 	ax[0] = Vector3{ rotation[0][0], rotation[0][1], rotation[0][2] }.Scale(bbmin.x);
@@ -264,13 +194,10 @@ void draw3dbox(Matrix3x3 rotation, Vector3 bbmin, Vector3 bbmax, Vector3 positio
 
 
 	ImColor color1 = ImColor(225, 0, 0, 200);
-	ImColor color2 = ImColor(255, 153, 51, 200);
+	ImColor color2 = color;
 
 	if (Invulnerable > 0.f)
-	{
 		color1 = ImColor(0, 255, 0, 200);
-		color2 = ImColor(0, 0, 255, 200);
-	}
 
 	Vector3 p1, p2;
 	for (int i = 0; i < 4; i++)
@@ -362,9 +289,36 @@ void ESP()
 			return;
 		auto position = localplayer->ControlledUnit->Position;
 		const auto& rotation = localplayer->ControlledUnit->RotationMatrix;
-		const auto& bbmin = localplayer->ControlledUnit->BBMin;
-		const auto& bbmax = localplayer->ControlledUnit->BBMax;
+		// FinalBbMin = new Vector3(BodyBbMin.X, BbMin.Y, BbMin.Z);
+		// FinalBbMax = new Vector3(BodyBbMax.X, MathF.Min(BodyBbMax.Y, BbMax.Y), BbMax.Z)
 
+		const auto draw = ImGui::GetBackgroundDrawList();
+
+		Weapon* weapon = localplayer->ControlledUnit->UnitWeapons->ControllableWeapons->WeaponPtr;
+		WeaponPositionInfoInternal* posInfo = localplayer->ControlledUnit->UnitWeapons->WeaponPositionInfo->InternalInfo;
+
+		Vector3 pitchPivotPos = posInfo->PitchPivotPosition;
+		Vector3 weaponPos = posInfo->Position;
+
+		bool isControllable = weapon->ControllableWeaponIndex != -1;
+		float cannonLength = Distance(weaponPos, pitchPivotPos); // You can use this for the cannon's bounding box
+
+		Vector3 origin = { };
+		if (WorldToScreen(weaponPos, origin))
+		{
+			draw->AddText({ origin.x, origin.y }, ImColor(255, 255, 255), "Weapon");
+		}
+		if (WorldToScreen(pitchPivotPos, origin))
+		{
+			draw->AddText({ origin.x, origin.y }, ImColor(255, 255, 255), "PitchPivot");
+		}
+		const char length = (char)cannonLength;
+		draw->AddText({ 500,250 }, ImColor(255, 0, 0), &length);
+		
+
+		const Vector3& bbmin = localplayer->ControlledUnit->BBMin;
+		const Vector3& bbmax = localplayer->ControlledUnit->BBMax;
+		
 		Vector3 ax[6];
 		ax[0] = Vector3{ rotation[0][0], rotation[0][1], rotation[0][2] }.Scale(bbmin.x);
 		ax[1] = Vector3{ rotation[1][0], rotation[1][1], rotation[1][2] }.Scale(bbmin.y);
@@ -391,7 +345,7 @@ void ESP()
 		v[6] = temp[5] + ax[4];
 		v[7] = temp[5] + ax[1];
 
-		const auto draw = ImGui::GetBackgroundDrawList();
+		
 
 		Vector3 p1, p2;
 		for (int i = 0; i < 4; i++)
@@ -437,13 +391,13 @@ void ESP()
 
 		}
 
-
-
 		auto position = unit->Position;
 		auto distance = Distance(position, localplayer->ControlledUnit->Position);
+		if(distance > 10000)
+			continue;
 		auto name = u8"";
 		name = (char8_t*)(unit->UnitInfo->ShortName);
-		auto text = std::format("{}  | {:.{}f} km", (char*)(name), distance, 2);
+		auto text = std::format("{} - {}m", (char*)name, (int)distance, 2);
 		auto size = ImGui::CalcTextSize(text.c_str());
 
 		int count = (16 - (unit->ReloadTimer));
@@ -455,10 +409,12 @@ void ESP()
 			if (!unit->UnitState == 0 or !player->IsAlive())
 				continue;
 			const auto& rotation = unit->RotationMatrix;
-			const auto& bbmin = unit->BBMin;
-			const auto& bbmax = unit->BBMax;
+			const Vector3& bbmin = unit->BBMin;
+			const Vector3& bbmax = unit->BBMax;
 
-			draw3dbox(rotation, bbmin, bbmax, position, unit->Invulnerable);
+			ImColor color = { 255, 0, 0, 255 };
+
+			draw3dbox(rotation, bbmin, bbmax, position, unit->Invulnerable, color);
 
 			Vector3 origin = { };
 			if (WorldToScreen(position, origin))
@@ -479,7 +435,7 @@ void ESP()
 
 				draw->AddRectFilled({ origin.x - (size.x * 0.5f) - 5, origin.y + 5 },
 					{ origin.x + (size.x * 0.5f) + 5, origin.y + 10 + (size.y * 0.5f) + 5 },
-					ImColor(0, 0, 0, 150));
+					ImColor(0, 0, 0, 100));
 
 				draw->AddText({ origin.x - (size.x * 0.5f), origin.y + (size.y * 0.5f) },
 					ImColor(255, 255, 255),
@@ -505,80 +461,106 @@ void ESP()
 				}
 
 			}
+			continue;
 		}
-		if (show_bots)
-		{
-			if (strcmp(curmap, "levels/firing_range.bin") != 0)
-				continue;
-
-			if (!unit->UnitState == 0)
-				continue;
-
-			if (!show_planes)
+		else {
+			if (show_bots)
 			{
-				if (strcmp(vehicleType, "exp_bomber") == 0 or strcmp(vehicleType, "exp_assault") == 0 or strcmp(vehicleType, "exp_fighter") == 0)
+				//if (strcmp(curmap, "levels/firing_range.bin") != 0)
+					//continue;
+
+				if (!unit->UnitState == 0)
 					continue;
-			}
-			if (strcmp(vehicleType, "exp_fortification") == 0 or strcmp(vehicleType, "exp_structure") == 0 or strcmp(vehicleType, "exp_aaa") == 0 or strcmp(vehicleType, "dummy_plane") == 0)
-				continue;
-
-			const auto& rotation = unit->RotationMatrix;
-			const auto& bbmin = unit->BBMin;
-			const auto& bbmax = unit->BBMax;
-
-			draw3dbox(rotation, bbmin, bbmax, position, unit->Invulnerable);
-
-			Vector3 origin = { };
-			if (WorldToScreen(position, origin))
-			{
-				if (origin.x < 0 || origin.x > scrsize.x || origin.y < 0 || origin.y > scrsize.y)
+				if (strcmp(vehicleType, "exp_fortification") == 0 or strcmp(vehicleType, "exp_structure") == 0 or strcmp(vehicleType, "exp_aaa") == 0 or strcmp(vehicleType, "dummy_plane") == 0 or strcmp(vehicleType, "exp_bridge") == 0)
+					continue;
+				if (!show_planes)
 				{
-					if (show_offscreen)
-					{
+					if (strcmp(vehicleType, "exp_bomber") == 0 or strcmp(vehicleType, "exp_assault") == 0 or strcmp(vehicleType, "exp_fighter") == 0)
+						continue;
+				}
+				
 
-						if (!isScoping)
+				const auto& rotation = unit->RotationMatrix;
+				const Vector3& bbmin = { unit->BodyBbMin.x, unit->BBMin.y, unit->BBMin.z };
+				const Vector3& bbmax = { unit->BodyBbMax.x, min(unit->BodyBbMax.y, unit->BBMax.y), unit->BBMax.z };
+				text = std::format("BOT - {}m",unit->UnitInfo->unitType , (int)distance, 1);
+				size = ImGui::CalcTextSize(text.c_str());
+				ImColor color = { 0, 0, 255, 255 };
+				draw3dbox(rotation, bbmin, bbmax, position, unit->Invulnerable, color);
+
+				Vector3 origin = { };
+				if (WorldToScreen(position, origin))
+				{
+					if (origin.x < 0 || origin.x > scrsize.x || origin.y < 0 || origin.y > scrsize.y)
+					{
+						if (show_offscreen)
 						{
-							drawOffscreenCentered(origin, distance);
+
+							if (!isScoping)
+							{
+								drawOffscreenCentered(origin, distance);
+							}
+							continue;
 						}
 						continue;
 					}
-					continue;
-				}
 
 
-				draw->AddRectFilled({ origin.x - (size.x * 0.5f) - 5, origin.y + 5 },
-					{ origin.x + (size.x * 0.5f) + 5, origin.y + 10 + (size.y * 0.5f) + 5 },
-					ImColor(0, 0, 0, 150));
-
-				draw->AddText({ origin.x - (size.x * 0.5f), origin.y + (size.y * 0.5f) },
-					ImColor(255, 255, 255),
-					text.c_str());
-
-				if (show_reload)
-				{
-					draw->AddRectFilled({ origin.x - (size.x * 0.5f) - 5, origin.y + 10 + (size.y * 0.5f) + 5 },
-						{ origin.x + (size.x * 0.5f) + 5, origin.y + 10 + (size.y * 0.3f) + 10 },
+					draw->AddRectFilled({ origin.x - (size.x * 0.5f) - 5, origin.y + 5 },
+						{ origin.x + (size.x * 0.5f) + 5, origin.y + 10 + (size.y * 0.5f) + 5 },
 						ImColor(0, 0, 0, 150));
-					if (progress == 1)
+
+					draw->AddText({ origin.x - (size.x * 0.5f), origin.y + (size.y * 0.5f) },
+						ImColor(255, 255, 255),
+						text.c_str());
+
+					if (show_reload)
 					{
 						draw->AddRectFilled({ origin.x - (size.x * 0.5f) - 5, origin.y + 10 + (size.y * 0.5f) + 5 },
-							{ origin.x - (size.x * 0.5f) + (progress * size.x) + 5, origin.y + 10 + (size.y * 0.5f) + 10 },
-							ImColor(0, 255, 0, 200));
+							{ origin.x + (size.x * 0.5f) + 5, origin.y + 10 + (size.y * 0.3f) + 10 },
+							ImColor(0, 0, 0, 150));
+						if (progress == 1)
+						{
+							draw->AddRectFilled({ origin.x - (size.x * 0.5f) - 5, origin.y + 10 + (size.y * 0.5f) + 5 },
+								{ origin.x - (size.x * 0.5f) + (progress * size.x) + 5, origin.y + 10 + (size.y * 0.5f) + 10 },
+								ImColor(0, 255, 0, 200));
+						}
+						else
+						{
+							draw->AddRectFilled({ origin.x - (size.x * 0.5f) - 5, origin.y + 10 + (size.y * 0.5f) + 5 },
+								{ origin.x - (size.x * 0.5f) + (progress * size.x) + 5, origin.y + 10 + (size.y * 0.5f) + 10 },
+								ImColor(255, 0, 0, 200));
+						}
 					}
-					else
-					{
-						draw->AddRectFilled({ origin.x - (size.x * 0.5f) - 5, origin.y + 10 + (size.y * 0.5f) + 5 },
-							{ origin.x - (size.x * 0.5f) + (progress * size.x) + 5, origin.y + 10 + (size.y * 0.5f) + 10 },
-							ImColor(255, 0, 0, 200));
-					}
+
 				}
 
 			}
-
 		}
 
 	}
 
+}
+
+void HudChanger()
+{
+	const auto draw = ImGui::GetBackgroundDrawList();
+	if (change_hud)
+	{
+		UnitList list = *(UnitList*)(cGame + 0x390);
+		if (!list.unitList)
+			return;
+		HUD* HudInfo = *(HUD**)(modulebase + off_hudInfo);
+
+		HudInfo->penetration_crosshair = (force_crosshair ? true : false);
+
+		HudInfo->unit_glow = (force_outline ? true : false);
+
+		HudInfo->gunner_sight_distance = (force_distance ? true : false);
+		
+		HudInfo->show_bombsight = (force_bombsight ? true : false);
+	}
+	return;
 }
 
 void ZoomMod()
@@ -684,7 +666,7 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 
 			ImGui::BeginTabBar("main");
 			ImGui::SetNextItemWidth(180.f);
-			if (ImGui::BeginTabItem("				ESP", &tab_esp, ImGuiTabItemFlags_NoCloseButton))
+			if (ImGui::BeginTabItem("\t\t\t\t\tESP", &tab_esp, ImGuiTabItemFlags_NoCloseButton))
 			{
 
 				ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.f);
@@ -714,12 +696,6 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 				}
 				ImGui::EndTabItem();
 			}
-			ImGui::SetNextItemWidth(180.f);
-			if (ImGui::BeginTabItem("			  AimBot", &tab_aimbot, ImGuiTabItemFlags_NoCloseButton))
-			{
-				ImGui::Text("Soon");
-				ImGui::EndTabItem();
-			}
 
 			ImGui::SetNextItemWidth(180.f);
 			if (ImGui::BeginTabItem("				Misc", &tab_misc, ImGuiTabItemFlags_NoCloseButton))
@@ -740,21 +716,42 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 				ImGui::Text("Shadow zoom multiplayer");
 				ImGui::SetCursorPosX(5.f);
 				ImGui::SliderFloat("##shadow", &shadow_mult, 20.0f, 250.0f);
+				ImGui::SetCursorPosX(5.f);
+				ImGui::Checkbox("Change HUD", &change_hud);
+				if (change_hud)
+				{
+					ImGui::SetCursorPosX(5.f);
+					ImGui::Checkbox("Enable bomb crosshair", &force_bombsight);
+					ImGui::SetCursorPosX(5.f);
+					ImGui::Checkbox("Enable penetration crosshair", &force_crosshair);
+					ImGui::SetCursorPosX(5.f);
+					ImGui::Checkbox("Enable enemy outline (when hovered)", &force_outline);
+					ImGui::SetCursorPosX(5.f);
+					ImGui::Checkbox("Show distance in scope", &force_distance);
+				}
+				
 				ImGui::PopStyleVar();
 				ImGui::PopStyleVar();
 				ImGui::EndTabItem();
 
-
+			}
+			ImGui::SetNextItemWidth(180.f);
+			if (ImGui::BeginTabItem("			  Debug", &tab_debug, ImGuiTabItemFlags_NoCloseButton))
+			{
+				ImGui::Text("For dev only :)");
+				ImGui::SetCursorPosX(5.f);
+				ImGui::Text("Current version: 1.3");
+				ImGui::EndTabItem();
 			}
 			ImGui::EndTabBar();
-			if (!tab_esp && !tab_misc && !tab_aimbot)
+			if (!tab_esp && !tab_misc && !tab_debug)
 			{
 				if (def_tab)
 				{
 					auto text1 = "This mod is made by m0nkrel ";
 					auto text2 = "with love <3";
 					auto text3 = "If you wanna support developer - DM me in ";
-					auto text4 = "Discord: m0nkrel#0001";
+					auto text4 = "Discord: m0nkrel#2715";
 					auto windowWidth = ImGui::GetWindowSize().x;
 					auto textWidth = ImGui::CalcTextSize(text1).x;
 
@@ -781,7 +778,7 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 					if (ImGui::IsItemClicked())
 					{
 						tab_esp = true;
-						tab_aimbot = true;
+						tab_debug = true;
 						tab_misc = true;
 						def_tab = false;
 					}
@@ -795,6 +792,7 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 	}
 	if (esp_status)
 		ESP();
+	HudChanger();
 	ZoomMod();
 	ImGui::Render();
 	pContext->OMSetRenderTargets(1, &mainRenderTargetView, NULL);
