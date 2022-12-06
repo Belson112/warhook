@@ -107,7 +107,7 @@ const Vector2 scrsize = { (float)scrW,(float)scrH };
 
 bool WorldToScreen(const Vector3& in, Vector3& out) noexcept
 {
-	const uintptr_t mat_addr = *(uintptr_t*)(cGame + 0x7b0) + 0x268;
+	const uintptr_t mat_addr = *(uintptr_t*)(cGame + 0x750) + 0x268;
 	const ViewMatrix& mat = *(ViewMatrix*)mat_addr;
 
 	float width = mat[0][3] * in.x + mat[1][3] * in.y + mat[2][3] * in.z + mat[3][3];
@@ -162,7 +162,7 @@ void InitImGui()
 }
 
 
-void draw3dbox(Matrix3x3 rotation, Vector3 bbmin, Vector3 bbmax, Vector3 position, float Invulnerable , ImColor color)
+void draw3dbox(Matrix3x3 rotation, Vector3 bbmin, Vector3 bbmax, Vector3 position, float Invulnerable)
 {
 	Vector3 ax[6];
 	ax[0] = Vector3{ rotation[0][0], rotation[0][1], rotation[0][2] }.Scale(bbmin.x);
@@ -192,9 +192,9 @@ void draw3dbox(Matrix3x3 rotation, Vector3 bbmin, Vector3 bbmax, Vector3 positio
 
 	const auto draw = ImGui::GetBackgroundDrawList();
 
-
-	ImColor color1 = ImColor(225, 0, 0, 200);
-	ImColor color2 = color;
+	ImColor color1 = ImColor(255, 0, 0);
+	ImColor color2 = ImColor(255, 255, 255);
+	
 
 	if (Invulnerable > 0.f)
 		color1 = ImColor(0, 255, 0, 200);
@@ -289,33 +289,9 @@ void ESP()
 			return;
 		auto position = localplayer->ControlledUnit->Position;
 		const auto& rotation = localplayer->ControlledUnit->RotationMatrix;
-		// FinalBbMin = new Vector3(BodyBbMin.X, BbMin.Y, BbMin.Z);
-		// FinalBbMax = new Vector3(BodyBbMax.X, MathF.Min(BodyBbMax.Y, BbMax.Y), BbMax.Z)
-
-		const auto draw = ImGui::GetBackgroundDrawList();
-
-		Weapon* weapon = localplayer->ControlledUnit->UnitWeapons->ControllableWeapons->WeaponPtr;
-		WeaponPositionInfoInternal* posInfo = localplayer->ControlledUnit->UnitWeapons->WeaponPositionInfo->InternalInfo;
-
-		Vector3 pitchPivotPos = posInfo->PitchPivotPosition;
-		Vector3 weaponPos = posInfo->Position;
-
-		bool isControllable = weapon->ControllableWeaponIndex != -1;
-		float cannonLength = Distance(weaponPos, pitchPivotPos); // You can use this for the cannon's bounding box
-
-		Vector3 origin = { };
-		if (WorldToScreen(weaponPos, origin))
-		{
-			draw->AddText({ origin.x, origin.y }, ImColor(255, 255, 255), "Weapon");
-		}
-		if (WorldToScreen(pitchPivotPos, origin))
-		{
-			draw->AddText({ origin.x, origin.y }, ImColor(255, 255, 255), "PitchPivot");
-		}
-		const char length = (char)cannonLength;
-		draw->AddText({ 500,250 }, ImColor(255, 0, 0), &length);
 		
-
+		auto draw = ImGui::GetBackgroundDrawList();
+		
 		const Vector3& bbmin = localplayer->ControlledUnit->BBMin;
 		const Vector3& bbmax = localplayer->ControlledUnit->BBMax;
 		
@@ -412,9 +388,7 @@ void ESP()
 			const Vector3& bbmin = unit->BBMin;
 			const Vector3& bbmax = unit->BBMax;
 
-			ImColor color = { 255, 0, 0, 255 };
-
-			draw3dbox(rotation, bbmin, bbmax, position, unit->Invulnerable, color);
+			draw3dbox(rotation, bbmin, bbmax, position, unit->Invulnerable);
 
 			Vector3 origin = { };
 			if (WorldToScreen(position, origin))
@@ -466,8 +440,8 @@ void ESP()
 		else {
 			if (show_bots)
 			{
-				//if (strcmp(curmap, "levels/firing_range.bin") != 0)
-					//continue;
+				if (strcmp(curmap, "levels/firing_range.bin") != 0)
+					continue;
 
 				if (!unit->UnitState == 0)
 					continue;
@@ -481,12 +455,11 @@ void ESP()
 				
 
 				const auto& rotation = unit->RotationMatrix;
-				const Vector3& bbmin = { unit->BodyBbMin.x, unit->BBMin.y, unit->BBMin.z };
-				const Vector3& bbmax = { unit->BodyBbMax.x, min(unit->BodyBbMax.y, unit->BBMax.y), unit->BBMax.z };
-				text = std::format("BOT - {}m",unit->UnitInfo->unitType , (int)distance, 1);
+				const Vector3& bbmin = unit->BBMin;
+				const Vector3& bbmax = unit->BBMax;
+				text = std::format("BOT - {}m",Distance((int)distance, 1));
 				size = ImGui::CalcTextSize(text.c_str());
-				ImColor color = { 0, 0, 255, 255 };
-				draw3dbox(rotation, bbmin, bbmax, position, unit->Invulnerable, color);
+				draw3dbox(rotation, bbmin, bbmax, position, unit->Invulnerable);
 
 				Vector3 origin = { };
 				if (WorldToScreen(position, origin))
@@ -666,7 +639,7 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 
 			ImGui::BeginTabBar("main");
 			ImGui::SetNextItemWidth(180.f);
-			if (ImGui::BeginTabItem("\t\t\t\t\tESP", &tab_esp, ImGuiTabItemFlags_NoCloseButton))
+			if (ImGui::BeginTabItem("\t\t\t\tESP", &tab_esp, ImGuiTabItemFlags_NoCloseButton))
 			{
 
 				ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.f);
@@ -723,11 +696,11 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 					ImGui::SetCursorPosX(5.f);
 					ImGui::Checkbox("Enable bomb crosshair", &force_bombsight);
 					ImGui::SetCursorPosX(5.f);
-					ImGui::Checkbox("Enable penetration crosshair", &force_crosshair);
-					ImGui::SetCursorPosX(5.f);
-					ImGui::Checkbox("Enable enemy outline (when hovered)", &force_outline);
-					ImGui::SetCursorPosX(5.f);
-					ImGui::Checkbox("Show distance in scope", &force_distance);
+				//	ImGui::Checkbox("Enable penetration crosshair", &force_crosshair);
+				//	ImGui::SetCursorPosX(5.f);
+				//	ImGui::Checkbox("Enable enemy outline (when hovered)", &force_outline);
+				//	ImGui::SetCursorPosX(5.f);
+				//	ImGui::Checkbox("Show distance in scope", &force_distance);
 				}
 				
 				ImGui::PopStyleVar();
@@ -738,9 +711,10 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 			ImGui::SetNextItemWidth(180.f);
 			if (ImGui::BeginTabItem("			  Debug", &tab_debug, ImGuiTabItemFlags_NoCloseButton))
 			{
+				ImGui::SetCursorPosX(5.f);
 				ImGui::Text("For dev only :)");
 				ImGui::SetCursorPosX(5.f);
-				ImGui::Text("Current version: 1.3");
+				ImGui::Text("Current version: 1.3.5");
 				ImGui::EndTabItem();
 			}
 			ImGui::EndTabBar();
@@ -785,7 +759,7 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 				}
 			}
 			ImGui::PopFont();
-
+			
 			ImGui::End();
 		}
 
