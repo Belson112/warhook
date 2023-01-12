@@ -1,5 +1,6 @@
 #pragma once
 #include "includes.h"
+#include "sigs.h"
 
 std::uint8_t* Scan(const char* signature) noexcept
 {
@@ -73,4 +74,15 @@ template<typename T = std::uintptr_t>
 constexpr T GetOffset(std::uintptr_t address, int offset)
 {
 	return (T)(address + (int)((*(int*)(address + offset) + offset) + sizeof(int)));
+};
+
+
+std::vector<uintptr_t> GetOffsets(std::vector<sig> signatures) {
+	std::vector<uintptr_t> offsets;
+	uintptr_t modulebase = (uintptr_t)GetModuleHandle(NULL);
+	for (auto& sig : signatures) {
+		uintptr_t address = GetOffset<std::uintptr_t>(get(sig.signature), sig.offset);
+		offsets.push_back(address - modulebase);
+	}
+	return offsets;
 }

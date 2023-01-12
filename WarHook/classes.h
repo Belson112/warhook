@@ -1,5 +1,6 @@
 #pragma once
 #include "includes.h"
+#include <unordered_set>
 
 class Player
 {
@@ -13,16 +14,7 @@ class Player
 		LIMBO = 8,
 		LOADING = 10
 	};
-public:
-	bool IsAlive() const noexcept
-	{
-		return GuiState == GuiState::ALIVE;
-	}
 
-	bool IsinHangar() const noexcept
-	{
-		return GuiState == GuiState::MENU;
-	}
 public:
 	char pad_0000[176]; //0x0000
 	char Name[8]; //0x00B0
@@ -30,41 +22,54 @@ public:
 	uint8_t GuiState; //0x04E8
 	char pad_04E9[551]; //0x04E9
 	class Unit* ControlledUnit; //0x0710
+
+	bool IsAlive() const noexcept
+	{
+		return GuiState == GuiState::ALIVE;
+	}
+
+	bool IsDead() const noexcept
+	{
+		return GuiState == GuiState::DEAD;
+	}
+
+	bool IsinHangar() const noexcept
+	{
+		return GuiState == GuiState::MENU;
+	}
 };
 
 
 class Unit
 {
 public:
-	char pad_0000[512]; //0x0000
-	Vector3 BBMin; //0x0200
-	Vector3 BBMax; //0x020C
-	char pad_0218[1256]; //0x0218
-	uint8_t ReloadTimer; //0x0700
-	char pad_0701[699]; //0x0701
-	Matrix3x3 RotationMatrix; //0x09BC
-	Vector3 Position; //0x09E0
-	char pad_09EC[1424]; //0x09EC
-	float Invulnerable; //0x0F7C
-	char pad_0F80[256]; //0x0F80
-	uint8_t UnitState; //0x1080
-	char pad_1081[15]; //0x1081
-	class Player* PlayerInfo; //0x1090
-	char pad_1098[64]; //0x1098
-	uint8_t TeamNum; //0x10D8
-	char pad_10D9[15]; //0x10D9
-	class Info* UnitInfo; //0x10E8
-	char pad_10F0[168]; //0x10F0
-	class Armory* UnitWeapons; //0x1198
-	char pad_11A0[3176]; //0x11A0
-	Vector3 BodyBbMin; //0x1E08
-	Vector3 BodyBbMax; //0x1E14
-};
+	char pad_0000[520]; //0x0000
+	Vector3 BBMin; //0x0208
+	Vector3 BBMax; //0x0214
+	char pad_0220[1256]; //0x0220
+	uint8_t ReloadTimer; //0x0708
+	char pad_0709[699]; //0x0709
+	Matrix3x3 RotationMatrix; //0x09C4
+	Vector3 Position; //0x09E8
+	char pad_09F4[1424]; //0x09F4
+	float Invulnerable; //0x0F84
+	char pad_0F88[256]; //0x0F88
+	uint8_t UnitState; //0x1088
+	char pad_1089[15]; //0x1089
+	class Player* PlayerInfo; //0x1098
+	char pad_10A0[64]; //0x10A0
+	uint8_t TeamNum; //0x10E0
+	char pad_10E1[15]; //0x10E1
+	class Info* UnitInfo; //0x10F0
+}; //Size: 0x10F8
+
 
 class HUD
 {
 public:
-	char pad_0000[652]; //0x0000
+	char pad_0000[641]; //0x0000
+	bool air_to_air_indicator;
+	char pad_0282[10]; //0x0282
 	bool penetration_crosshair; //0x028C
 	bool unit_glow; //0x028D
 	bool gunner_sight_distance; //0x028E
@@ -266,10 +271,11 @@ public:
 	char pad_01EC[16]; //0x01EC
 	float ShadowMulti; //0x01FC
 
-
-	bool isPlane() const noexcept
-	{
-		return unitType == "exp_fighter" or "exp_bomber" or "exp_assault";
+	bool isPlane() {
+		return (strcmp(unitType, "exp_bomber") == 0 || strcmp(unitType, "exp_assault") == 0 || strcmp(unitType, "exp_fighter") == 0);
+	}
+	bool isDummy() {
+		return (strcmp(unitType, "exp_fortification") == 0 || strcmp(unitType, "exp_structure") == 0 || strcmp(unitType, "exp_aaa") == 0 || strcmp(unitType, "dummy_plane") == 0 || strcmp(unitType, "exp_bridge") == 0);
 	}
 };
 
@@ -278,14 +284,12 @@ public:
 	Player* players[64];
 };
 
-class Units
-{
+class Units{
 public:
 	std::array<Unit*, 500U> units;
 };
 
-class UnitList
-{
+class UnitList{
 public:
 	Units* unitList;
 	std::uint16_t unitCount;

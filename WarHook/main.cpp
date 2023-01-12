@@ -1,13 +1,4 @@
-#include "includes.h"
-
-#include "font.h"
-
 #include "main.h"
-#include "math.h"
-#include "classes.h"
-#include "offsets.h"
-#include "sigScanner.h"
-
 
 void SetupImGuiStyle()
 {
@@ -77,6 +68,15 @@ void SetupImGuiStyle()
 
 }
 
+uintptr_t modulebase = (uintptr_t)GetModuleHandle(NULL);
+std::vector<uintptr_t> offsets = GetOffsets(signatures);
+
+uintptr_t cGame = *(uintptr_t*)(modulebase + offsets[0]);
+const int scrW = *(int*)(modulebase + offsets[3]);
+const int scrH = *(int*)(modulebase + offsets[3]+0x4);
+
+const Vector2 scrsize = { (float)scrW,(float)scrH };
+
 float Distance(Vector3 target, Vector3 localplayer)
 {
 	float distance = std::sqrtf((target.x - localplayer.x) * (target.x - localplayer.x) +
@@ -85,29 +85,9 @@ float Distance(Vector3 target, Vector3 localplayer)
 	return distance;
 }
 
-uintptr_t modulebase = (uintptr_t)GetModuleHandle(NULL);
-uintptr_t aGame = (GetOffset<std::uintptr_t>(get(sigs::Game), 0x3));
-uintptr_t aLocalPlayer = (GetOffset<std::uintptr_t>(get(sigs::LocalPlayer), 0x3));
-uintptr_t aScrW = (GetOffset<std::uintptr_t>(get(sigs::ScreenWidth), 0x2));
-uintptr_t aIsScoping = (GetOffset<std::uintptr_t>(get(sigs::IsScoping), 0x2));
-uintptr_t aHudInfo = (GetOffset<std::uintptr_t>(get(sigs::HudInfo), 0x3));
-
-uintptr_t off_game = aGame - modulebase;
-uintptr_t off_localplayer = aLocalPlayer - modulebase;
-uintptr_t off_scrW = aScrW - modulebase;
-uintptr_t off_scrH = off_scrW + 0x4;
-uintptr_t off_isScoping = aIsScoping - modulebase;
-uintptr_t off_hudInfo = aHudInfo - modulebase;
-
-uintptr_t cGame = *(uintptr_t*)(modulebase + off_game);
-const int scrW = *(int*)(modulebase + off_scrW);
-const int scrH = *(int*)(modulebase + off_scrH);
-
-const Vector2 scrsize = { (float)scrW,(float)scrH };
-
 bool WorldToScreen(const Vector3& in, Vector3& out) noexcept
 {
-	const uintptr_t mat_addr = *(uintptr_t*)(cGame + 0x750) + 0x268;
+	const uintptr_t mat_addr = *(uintptr_t*)(cGame + 0x750) + 0x258;
 	const ViewMatrix& mat = *(ViewMatrix*)mat_addr;
 
 	float width = mat[0][3] * in.x + mat[1][3] * in.y + mat[2][3] * in.z + mat[3][3];
@@ -215,6 +195,55 @@ void draw3dbox(Matrix3x3 rotation, Vector3 bbmin, Vector3 bbmax, Vector3 positio
 
 }
 
+void draw3dbox(Matrix3x3 rotation, Vector3 bbmin, Vector3 bbmax, Vector3 position)
+{
+	Vector3 ax[6];
+	ax[0] = Vector3{ rotation[0][0], rotation[0][1], rotation[0][2] }.Scale(bbmin.x);
+	ax[1] = Vector3{ rotation[1][0], rotation[1][1], rotation[1][2] }.Scale(bbmin.y);
+	ax[2] = Vector3{ rotation[2][0], rotation[2][1], rotation[2][2] }.Scale(bbmin.z);
+	ax[3] = Vector3{ rotation[0][0], rotation[0][1], rotation[0][2] }.Scale(bbmax.x);
+	ax[4] = Vector3{ rotation[1][0], rotation[1][1], rotation[1][2] }.Scale(bbmax.y);
+	ax[5] = Vector3{ rotation[2][0], rotation[2][1], rotation[2][2] }.Scale(bbmax.z);
+
+	Vector3 temp[6];
+	temp[0] = position + ax[2];
+	temp[1] = position + ax[5];
+	temp[2] = temp[0] + ax[3];
+	temp[3] = temp[1] + ax[3];
+	temp[4] = temp[0] + ax[0];
+	temp[5] = temp[1] + ax[0];
+
+	Vector3 v[8];
+	v[0] = temp[2] + ax[1];
+	v[1] = temp[2] + ax[4];
+	v[2] = temp[3] + ax[4];
+	v[3] = temp[3] + ax[1];
+	v[4] = temp[4] + ax[1];
+	v[5] = temp[4] + ax[4];
+	v[6] = temp[5] + ax[4];
+	v[7] = temp[5] + ax[1];
+
+	const auto draw = ImGui::GetBackgroundDrawList();
+
+	ImColor color1 = ImColor(255, 0, 0);
+	ImColor color2 = ImColor(255, 255, 255);
+
+	Vector3 p1, p2;
+	for (int i = 0; i < 4; i++)
+	{
+
+		if (WorldToScreen(v[i], p1) && WorldToScreen(v[(i + 1) & 3], p2))
+			draw->AddLine({ p1.x, p1.y }, { p2.x, p2.y }, color1, 2.f);
+
+		if (WorldToScreen(v[4 + i], p1) && WorldToScreen(v[4 + ((i + 1) & 3)], p2))
+			draw->AddLine({ p1.x, p1.y }, { p2.x, p2.y }, color2, 2.f);
+
+		if (WorldToScreen(v[i], p1) && WorldToScreen(v[4 + i], p2))
+			draw->AddLine({ p1.x, p1.y }, { p2.x, p2.y }, color2, 2.f);
+	}
+
+}
+
 void drawOffscreenCentered(Vector3 origin, float distance)
 {
 	ImRect screen_rect = { 0.0f, 0.0f, scrsize.x, scrsize.y };
@@ -253,14 +282,7 @@ void drawOffscreenCentered(Vector3 origin, float distance)
 		alpha = origin.z < 0 ? 1.0f : (distance / nearThreshold);
 	}
 	auto arrowColor = ImColor((int)(off_color[0] * 255.f), (int)(off_color[1] * 255.f), (int)(off_color[2] * 255.f));
-	auto textColor = ImColor(0, 0, 0);
-	auto bgcolor = ImColor(255, 255, 255);
 	arrowColor.Value.w = (std::min)(alpha, 1.0f);
-	textColor.Value.w = (std::min)(alpha, 1.0f);
-	bgcolor.Value.w = (std::min)(alpha, 1.0f);
-	auto text = std::format("{:.{}f} km", distance, 1);
-	auto text_size = ImGui::CalcTextSize(text.c_str());
-	auto text_pos = ImVec2(arrow_center.x + (origin.z > 0 ? -text_size.x : text_size.x), arrow_center.y + (origin.z > 0 ? -text_size.y : text_size.y));
 	draw->AddTriangleFilled(points[0], points[1], points[3], arrowColor);
 	draw->AddTriangleFilled(points[2], points[1], points[3], arrowColor);
 	draw->AddQuad(points[0], points[1], points[2], points[3], ImColor(0.0f, 0.0f, 0.0f, alpha), 0.6f);
@@ -279,8 +301,8 @@ void ESP()
 	UnitList list = *(UnitList*)(cGame + 0x390);
 	if (!list.unitList)
 		return;
-	Player* localplayer = *(Player**)(modulebase + off_localplayer);
-	bool isScoping = *(bool*)(modulebase + off_isScoping);
+	Player* localplayer = *(Player**)(modulebase + offsets[1]);
+	bool isScoping = *(bool*)(modulebase + offsets[4]);
 	char* curmap = *(char**)(cGame + 0x1d0);
 
 	if (localplayer->IsinHangar())
@@ -295,47 +317,7 @@ void ESP()
 		const Vector3& bbmin = localplayer->ControlledUnit->BBMin;
 		const Vector3& bbmax = localplayer->ControlledUnit->BBMax;
 		
-		Vector3 ax[6];
-		ax[0] = Vector3{ rotation[0][0], rotation[0][1], rotation[0][2] }.Scale(bbmin.x);
-		ax[1] = Vector3{ rotation[1][0], rotation[1][1], rotation[1][2] }.Scale(bbmin.y);
-		ax[2] = Vector3{ rotation[2][0], rotation[2][1], rotation[2][2] }.Scale(bbmin.z);
-		ax[3] = Vector3{ rotation[0][0], rotation[0][1], rotation[0][2] }.Scale(bbmax.x);
-		ax[4] = Vector3{ rotation[1][0], rotation[1][1], rotation[1][2] }.Scale(bbmax.y);
-		ax[5] = Vector3{ rotation[2][0], rotation[2][1], rotation[2][2] }.Scale(bbmax.z);
-
-		Vector3 temp[6];
-		temp[0] = position + ax[2];
-		temp[1] = position + ax[5];
-		temp[2] = temp[0] + ax[3];
-		temp[3] = temp[1] + ax[3];
-		temp[4] = temp[0] + ax[0];
-		temp[5] = temp[1] + ax[0];
-
-		Vector3 v[8];
-		v[0] = temp[2] + ax[1];
-		v[1] = temp[2] + ax[4];
-		v[2] = temp[3] + ax[4];
-		v[3] = temp[3] + ax[1];
-		v[4] = temp[4] + ax[1];
-		v[5] = temp[4] + ax[4];
-		v[6] = temp[5] + ax[4];
-		v[7] = temp[5] + ax[1];
-
-		
-
-		Vector3 p1, p2;
-		for (int i = 0; i < 4; i++)
-		{
-
-			if (WorldToScreen(v[i], p1) && WorldToScreen(v[(i + 1) & 3], p2))
-				draw->AddLine({ p1.x, p1.y }, { p2.x, p2.y }, ImColor(225, 0, 0, 200), 2.f);
-
-			if (WorldToScreen(v[4 + i], p1) && WorldToScreen(v[4 + ((i + 1) & 3)], p2))
-				draw->AddLine({ p1.x, p1.y }, { p2.x, p2.y }, ImColor(255, 153, 51, 200), 2.f);
-
-			if (WorldToScreen(v[i], p1) && WorldToScreen(v[4 + i], p2))
-				draw->AddLine({ p1.x, p1.y }, { p2.x, p2.y }, ImColor(255, 153, 51, 200), 2.f);
-		}
+		draw3dbox(rotation, bbmin, bbmax, position);
 		return;
 	}
 
@@ -357,25 +339,23 @@ void ESP()
 		if (unit->Position.x == 0)
 			continue;
 		const auto draw = ImGui::GetBackgroundDrawList();
-		const auto vehicleType = unit->UnitInfo->unitType;
-		if (strcmp(vehicleType, "exp_bomber") == 0 or strcmp(vehicleType, "exp_assault") == 0 or strcmp(vehicleType, "exp_fighter") == 0)
+		
+		if (unit->UnitInfo->isPlane())
 		{
 			if (!show_planes)
 			{
 				continue;
 			}
-
 		}
 
 		auto position = unit->Position;
 		auto distance = Distance(position, localplayer->ControlledUnit->Position);
-		if(distance > 10000)
-			continue;
 		auto name = u8"";
 		name = (char8_t*)(unit->UnitInfo->ShortName);
 		auto text = std::format("{} - {}m", (char*)name, (int)distance, 2);
 		auto size = ImGui::CalcTextSize(text.c_str());
-
+		
+		//reload line inmplementation
 		int count = (16 - (unit->ReloadTimer));
 		constexpr float stat = (10.f / 16);
 		float progress = ((stat * count) * 0.1f);
@@ -445,11 +425,11 @@ void ESP()
 
 				if (!unit->UnitState == 0)
 					continue;
-				if (strcmp(vehicleType, "exp_fortification") == 0 or strcmp(vehicleType, "exp_structure") == 0 or strcmp(vehicleType, "exp_aaa") == 0 or strcmp(vehicleType, "dummy_plane") == 0 or strcmp(vehicleType, "exp_bridge") == 0)
+				if (unit->UnitInfo->isDummy())
 					continue;
 				if (!show_planes)
 				{
-					if (strcmp(vehicleType, "exp_bomber") == 0 or strcmp(vehicleType, "exp_assault") == 0 or strcmp(vehicleType, "exp_fighter") == 0)
+					if (unit->UnitInfo->isPlane())
 						continue;
 				}
 				
@@ -457,7 +437,7 @@ void ESP()
 				const auto& rotation = unit->RotationMatrix;
 				const Vector3& bbmin = unit->BBMin;
 				const Vector3& bbmax = unit->BBMax;
-				text = std::format("BOT - {}m",Distance((int)distance, 1));
+				text = std::format("BOT - {}m", (int)distance);
 				size = ImGui::CalcTextSize(text.c_str());
 				draw3dbox(rotation, bbmin, bbmax, position, unit->Invulnerable);
 
@@ -523,13 +503,15 @@ void HudChanger()
 		UnitList list = *(UnitList*)(cGame + 0x390);
 		if (!list.unitList)
 			return;
-		HUD* HudInfo = *(HUD**)(modulebase + off_hudInfo);
+		HUD* HudInfo = *(HUD**)(modulebase + offsets[2]);
 
-		HudInfo->penetration_crosshair = (force_crosshair ? true : false);
+		//HudInfo->penetration_crosshair = (force_crosshair ? true : false);
 
-		HudInfo->unit_glow = (force_outline ? true : false);
+		//HudInfo->unit_glow = (force_outline ? true : false);
 
-		HudInfo->gunner_sight_distance = (force_distance ? true : false);
+		//HudInfo->gunner_sight_distance = (force_distance ? true : false);
+
+		//HudInfo->air_to_air_indicator = (force_air_to_air ? true : false);
 		
 		HudInfo->show_bombsight = (force_bombsight ? true : false);
 	}
@@ -541,7 +523,7 @@ void ZoomMod()
 	UnitList list = *(UnitList*)(cGame + 0x390);
 	if (!list.unitList)
 		return;
-	Player* localplayer = *(Player**)(modulebase + off_localplayer);
+	Player* localplayer = *(Player**)(modulebase + offsets[1]);
 	if (localplayer->IsinHangar())
 		return;
 	if (localplayer->ControlledUnit == NULL or localplayer->ControlledUnit->UnitInfo == NULL)
@@ -555,35 +537,35 @@ void ZoomMod()
 	}
 	else
 	{
-		localplayer->ControlledUnit->UnitInfo->ZoomMulti = 5.f;
-		localplayer->ControlledUnit->UnitInfo->AlternateMulti = 15.f;
-		localplayer->ControlledUnit->UnitInfo->ShadowMulti = 20.f;
+		localplayer->ControlledUnit->UnitInfo->ZoomMulti = DEFAULT_ZOOM_MULT;
+		localplayer->ControlledUnit->UnitInfo->AlternateMulti = DEFAULT_ALT_MULT;
+		localplayer->ControlledUnit->UnitInfo->ShadowMulti = DEFAULT_SHADOW_MULT;
 	}
 	return;
 }
 
-void showWarningwindow()
-{
-	auto text1 = "THIS SOFTWARE DISTRIBUTED FOR FREE.";
-	auto text2 = "IF YOU PAID FOR THIS SOFTWARE - YOU GOT SCAMMED.";
-	ImGui::SetNextWindowSize({ scrsize.x, scrsize.y });
-	ImGui::SetNextWindowPos({ 0, 0 });
-	auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar;
-	ImGui::Begin("WARNING", nullptr, flags);
-	ImGui::PushFont(big_main);
-	auto textWidth1 = ImGui::CalcTextSize(text1).x;
-	ImGui::SetCursorPos(ImVec2((scrsize.x - textWidth1) * 0.5f, 100));
-	ImGui::Text(text1);
-	auto textWidth2 = ImGui::CalcTextSize(text2).x;
-	ImGui::SetCursorPosX((scrsize.x - textWidth2) * 0.5f);
-	ImGui::Text(text2);
-	ImGui::SetCursorPosX((scrsize.x - 225) * 0.5f);
-	ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.f);
-	ImGui::Checkbox("I understood that", &agree);
-	ImGui::PopStyleVar();
-	ImGui::PopFont();
-	ImGui::End();
-}
+//void showWarningwindow()
+//{
+//	auto text1 = "THIS SOFTWARE DISTRIBUTED FOR FREE.";
+//	auto text2 = "IF YOU PAID FOR THIS SOFTWARE - YOU GOT SCAMMED.";
+//	ImGui::SetNextWindowSize({ scrsize.x, scrsize.y });
+//	ImGui::SetNextWindowPos({ 0, 0 });
+//	auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar;
+//	ImGui::Begin("WARNING", nullptr, flags);
+//	ImGui::PushFont(big_main);
+//	auto textWidth1 = ImGui::CalcTextSize(text1).x;
+//	ImGui::SetCursorPos(ImVec2((scrsize.x - textWidth1) * 0.5f, 100));
+//	ImGui::Text(text1);
+//	auto textWidth2 = ImGui::CalcTextSize(text2).x;
+//	ImGui::SetCursorPosX((scrsize.x - textWidth2) * 0.5f);
+//	ImGui::Text(text2);
+//	ImGui::SetCursorPosX((scrsize.x - 225) * 0.5f);
+//	ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.f);
+//	ImGui::Checkbox("I understood that", &agree);
+//	ImGui::PopStyleVar();
+//	ImGui::PopFont();
+//	ImGui::End();
+//}
 bool init = false;
 HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags)
 {
@@ -623,13 +605,13 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 	}
 
 
-	if (!agree)
-		showWarningwindow();
+	/*if (!agree)
+		showWarningwindow();*/
 
 	ImGui::GetIO().MouseDrawCursor = open;
 
-	if (agree)
-	{
+	//if (agree)
+	//{
 		if (open)
 		{
 			ImGui::PushFont(med_main);
@@ -696,8 +678,8 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 					ImGui::SetCursorPosX(5.f);
 					ImGui::Checkbox("Enable bomb crosshair", &force_bombsight);
 					ImGui::SetCursorPosX(5.f);
-				//	ImGui::Checkbox("Enable penetration crosshair", &force_crosshair);
-				//	ImGui::SetCursorPosX(5.f);
+					ImGui::Checkbox("Enable Air-To_air indicator", &force_air_to_air);
+					ImGui::SetCursorPosX(5.f);
 				//	ImGui::Checkbox("Enable enemy outline (when hovered)", &force_outline);
 				//	ImGui::SetCursorPosX(5.f);
 				//	ImGui::Checkbox("Show distance in scope", &force_distance);
@@ -714,7 +696,7 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 				ImGui::SetCursorPosX(5.f);
 				ImGui::Text("For dev only :)");
 				ImGui::SetCursorPosX(5.f);
-				ImGui::Text("Current version: 1.3.5");
+				ImGui::Text("Current version: 1.4.0");
 				ImGui::EndTabItem();
 			}
 			ImGui::EndTabBar();
@@ -722,10 +704,8 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 			{
 				if (def_tab)
 				{
-					auto text1 = "This mod is made by m0nkrel ";
+					auto text1 = "This mod is made by monkrel ";
 					auto text2 = "with love <3";
-					auto text3 = "If you wanna support developer - DM me in ";
-					auto text4 = "Discord: m0nkrel#2715";
 					auto windowWidth = ImGui::GetWindowSize().x;
 					auto textWidth = ImGui::CalcTextSize(text1).x;
 
@@ -736,14 +716,6 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 					ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
 					ImGui::Text(text2);
 
-					textWidth = ImGui::CalcTextSize(text3).x;
-					ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
-					ImGui::SetCursorPos({ (windowWidth - textWidth) * 0.5f, 250 });
-					ImGui::Text(text3);
-
-					textWidth = ImGui::CalcTextSize(text4).x;
-					ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
-					ImGui::Text(text4);
 
 					ImGui::SetCursorPos({ (windowWidth - 100) * 0.5f ,150 });
 					ImGui::Button("Start", { 100,30 });
@@ -763,7 +735,7 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 			ImGui::End();
 		}
 
-	}
+	//}
 	if (esp_status)
 		ESP();
 	HudChanger();

@@ -6,7 +6,7 @@
 
 constexpr auto M_PI = 3.14159265358979323846f;
 constexpr auto M_RADPI = 57.295779513082f;
-#define M_PI_F		((float)(M_PI))	// Shouldn't collide with anything.
+#define M_PI_F		((float)(M_PI))
 #define RAD2DEG( x )  ( (float)(x) * (float)(180.f / M_PI_F) )
 #define DEG2RAD( x )  ( (float)(x) * (float)(M_PI_F / 180.f) )
 
@@ -70,6 +70,14 @@ struct Vector3
 		return Vector3(x / scale, y / scale, z / scale);
 	}
 
+	constexpr float operator[](const size_t index) const noexcept
+	{
+		if (index == 0) return x;
+		if (index == 1) return y;
+		if (index == 2) return z;
+		throw std::out_of_range("Index out of range for Vector3");
+	}
+
 	float LengthTo(const Vector3& other) const noexcept
 	{
 		return std::sqrtf((x - other.x) * (x - other.x) +
@@ -121,44 +129,3 @@ public:
 	float Length() const { return sqrtf(dot()); }
 };
 
-void VectorAnglesRadar(Vector3& forward, Vector3& angles)
-{
-	if (forward.x == 0.f && forward.y == 0.f)
-	{
-		angles.x = forward.z > 0.f ? -90.f : 90.f;
-		angles.y = 0.f;
-	}
-	else
-	{
-		angles.x = RAD2DEG(atan2(-forward.z, forward.Length()));
-		angles.y = RAD2DEG(atan2(forward.y, forward.x));
-	}
-	angles.z = 0.f;
-}
-
-void RotateTriangle(std::array<Vector3, 3>& points, float rotation)
-{
-	const auto points_center = (points[0] + points[1] + points[2]) / 3.f;
-	for (auto& point : points)
-	{
-		point = point - points_center;
-
-		const auto temp_x = point.x;
-		const auto temp_y = point.y;
-
-		const auto theta = DEG2RAD(rotation);
-		const auto c = cosf(theta);
-		const auto s = sinf(theta);
-
-		point.x = temp_x * c - temp_y * s;
-		point.y = temp_x * s + temp_y * c;
-
-		point = point + points_center;
-	}
-}
-
-void DrawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, float thickness, ImColor color) {
-	ImGui::GetWindowDrawList()->AddLine(ImVec2(x1, y1), ImVec2(x2, y2), color, thickness);
-	ImGui::GetWindowDrawList()->AddLine(ImVec2(x2, y2), ImVec2(x3, y3), color, thickness);
-	ImGui::GetWindowDrawList()->AddLine(ImVec2(x3, y3), ImVec2(x1, y1), color, thickness);
-}

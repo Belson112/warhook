@@ -1,9 +1,6 @@
 #pragma once
+#include "includes.h"
 
-namespace offsets
-{
-	constexpr auto client = 0x5A0F4C;
-}
 
 namespace sigs
 {
@@ -12,4 +9,16 @@ namespace sigs
 	constexpr auto HudInfo = "48 8B 0D ? ? ? ? 83 B9 ? ? ? ? ? 7C 4E";
 	constexpr auto ScreenWidth = "89 05 ? ? ? ? 8b 0d ? ? ? ? 89 0d ? ? ? ? 8b 15 ? ? ? ? f3 0f 2a c2 f3 0f 11 05 ? ? ? ? 8b 35";
 	constexpr auto IsScoping = "88 0d ? ? ? ? 48 8b 05 ? ? ? ? 48 8b 80";
-}
+};
+
+struct sig {
+	const char* signature;
+	uintptr_t offset;
+	sig(const char* signature, uintptr_t offset) : signature(signature), offset(offset) {}
+};
+
+std::vector<sig> signatures = { sig(sigs::Game,0x3), sig(sigs::LocalPlayer,0x3), sig(sigs::HudInfo,0x3), sig(sigs::ScreenWidth,0x2),
+								sig(sigs::IsScoping,0x2) };
+
+
+

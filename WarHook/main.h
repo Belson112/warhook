@@ -1,31 +1,43 @@
 #pragma once
 #include "includes.h"
+#include "math.h"
+#include "font.h"
+#include "classes.h"
+#include "sigs.h"
+#include "sigScanner.h"
 
-static bool offscreen = false;
-static bool agree = false;
-static bool open = true;
-static bool tab_esp = false;
-static bool tab_misc = false;
-static bool tab_debug = false;
-static bool def_tab = true;
-static bool def_choice = false;
 
-static bool esp_status = false;
-static bool show_reload = false;
-static bool show_bots = false;
-static bool show_planes = false;
-static bool show_offscreen = false;
+bool offscreen = false;
+bool agree = false;
+bool open = true;
+bool tab_esp = false;
+bool tab_misc = false;
+bool tab_debug = false;
+bool def_tab = true;
+bool def_choice = false;
 
-static bool zoom_mod = false;
-static bool change_hud = false;
-static bool force_crosshair = false;
-static bool force_outline = false;
-static bool force_distance = false;
-static bool force_bombsight = false;
+bool esp_status = false;
+bool show_reload = false;
+bool show_bots = false;
+bool show_planes = false;
+bool show_offscreen = false;
 
-static float zoom_mult = 3.f;
-static float alt_mult = 12.f;
-static float shadow_mult = 20.f;
+bool zoom_mod = false;
+bool change_hud = false;
+bool force_crosshair = false;
+bool force_outline = false;
+bool force_distance = false;
+bool force_bombsight = false;
+bool force_air_to_air = false;
+
 float off_arrow_size = 2.f;
 float off_radius = 100.f;
-float off_color[] {0.f,0.f,0.f};
+float off_color[]{ 0.f,0.f,0.f };
+
+float zoom_mult = 3.f;
+float alt_mult = 12.f;
+float shadow_mult = 20.f;
+
+constexpr auto DEFAULT_ZOOM_MULT = 5.f;
+constexpr auto DEFAULT_ALT_MULT = 15.f;
+constexpr auto DEFAULT_SHADOW_MULT = 20.f;

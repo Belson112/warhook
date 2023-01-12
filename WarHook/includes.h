@@ -6,6 +6,7 @@
 #include <array>
 #include <vector>
 #include <string>
+#include <iostream>
 #include "kiero/kiero.h"
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_win32.h"
