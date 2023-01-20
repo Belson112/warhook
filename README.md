@@ -1,8 +1,8 @@
 # WarHook
 
-##Some DLC for certain Thunder War game
+## Some DLC for certain Thunder War game
 
-###A brief description of what to do if there are problems:
+### A brief description of what to do if there are problems:
 
 **- The game crashes right after the injection**
 
