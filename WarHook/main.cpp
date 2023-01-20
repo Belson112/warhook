@@ -71,6 +71,14 @@ void SetupImGuiStyle()
 uintptr_t modulebase = (uintptr_t)GetModuleHandle(NULL);
 std::vector<uintptr_t> offsets = GetOffsets(signatures);
 
+/*
+offsets[0] = cGame
+offsets[1] = LocalPlayer
+offsets[2] = HudInfo
+offsets[3] = ScreenWidth
+offsets[4] = IsScoping
+*/
+
 uintptr_t cGame = *(uintptr_t*)(modulebase + offsets[0]);
 const int scrW = *(int*)(modulebase + offsets[3]);
 const int scrH = *(int*)(modulebase + offsets[3]+0x4);
@@ -87,7 +95,7 @@ float Distance(Vector3 target, Vector3 localplayer)
 
 bool WorldToScreen(const Vector3& in, Vector3& out) noexcept
 {
-	const uintptr_t mat_addr = *(uintptr_t*)(cGame + 0x750) + 0x258;
+	const uintptr_t mat_addr = *(uintptr_t*)(cGame + 0x750) + 0x258; // Update if boxes fucked up
 	const ViewMatrix& mat = *(ViewMatrix*)mat_addr;
 
 	float width = mat[0][3] * in.x + mat[1][3] * in.y + mat[2][3] * in.z + mat[3][3];
@@ -172,8 +180,8 @@ void draw3dbox(Matrix3x3 rotation, Vector3 bbmin, Vector3 bbmax, Vector3 positio
 
 	const auto draw = ImGui::GetBackgroundDrawList();
 
-	ImColor color1 = ImColor(255, 0, 0);
-	ImColor color2 = ImColor(255, 255, 255);
+	ImColor color1 = ImColor(255, 0, 0); //Front color
+	ImColor color2 = ImColor(255, 255, 255); //Other
 	
 
 	if (Invulnerable > 0.f)
@@ -355,7 +363,7 @@ void ESP()
 		auto text = std::format("{} - {}m", (char*)name, (int)distance, 2);
 		auto size = ImGui::CalcTextSize(text.c_str());
 		
-		//reload line inmplementation
+		//reload line implementation
 		int count = (16 - (unit->ReloadTimer));
 		constexpr float stat = (10.f / 16);
 		float progress = ((stat * count) * 0.1f);
@@ -420,7 +428,7 @@ void ESP()
 		else {
 			if (show_bots)
 			{
-				if (strcmp(curmap, "levels/firing_range.bin") != 0)
+				if (strcmp(curmap, "levels/firing_range.bin") != 0) //If we wanna show bots only in firing range
 					continue;
 
 				if (!unit->UnitState == 0)
