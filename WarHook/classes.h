@@ -39,30 +39,28 @@ public:
 	}
 };
 
-
 class Unit
 {
 public:
 	char pad_0000[520]; //0x0000
 	Vector3 BBMin; //0x0208
 	Vector3 BBMax; //0x0214
-	char pad_0220[1256]; //0x0220
-	uint8_t ReloadTimer; //0x0708
-	char pad_0709[699]; //0x0709
-	Matrix3x3 RotationMatrix; //0x09C4
-	Vector3 Position; //0x09E8
-	char pad_09F4[1424]; //0x09F4
-	float Invulnerable; //0x0F84
-	char pad_0F88[256]; //0x0F88
-	uint8_t UnitState; //0x1088
-	char pad_1089[15]; //0x1089
-	class Player* PlayerInfo; //0x1098
-	char pad_10A0[64]; //0x10A0
-	uint8_t TeamNum; //0x10E0
-	char pad_10E1[15]; //0x10E1
-	class Info* UnitInfo; //0x10F0
-}; //Size: 0x10F8
-
+	char pad_0220[1288]; //0x0220
+	uint8_t ReloadTimer; //0x0728
+	char pad_0729[699]; //0x0729
+	Matrix3x3 RotationMatrix; //0x09E4
+	Vector3 Position; //0x0A08
+	char pad_0A14[1424]; //0x0A14
+	float Invulnerable; //0x0FA4
+	char pad_0FA8[256]; //0x0FA8
+	uint8_t UnitState; //0x10A8
+	char pad_10A9[15]; //0x10A9
+	class Player* PlayerInfo; //0x10B8
+	char pad_10C0[64]; //0x10C0
+	uint8_t TeamNum; //0x1100
+	char pad_1101[15]; //0x1101
+	class Info* UnitInfo; //0x1110
+}; //Size: 0x1118
 
 class HUD
 {
@@ -91,7 +89,6 @@ public:
 	int64_t WeaponCount; //0x03A0
 }; //Size: 0x03A8
 
-
 class WeaponPositionInfo
 {
 public:
@@ -101,7 +98,6 @@ public:
 	char pad_0270[88]; //0x0270
 	int32_t Padding; //0x02C8
 }; //Size: 0x02CC
-
 
 class ControllableWeapon
 {
@@ -118,7 +114,6 @@ public:
 	int32_t Padding; //0x0288
 }; //Size: 0x0490
 
-
 class Weapon
 {
 public:
@@ -130,7 +125,6 @@ public:
 	Vector3 Left; //0x00A8
 }; //Size: 0x0894
 
-
 class WeaponPositionInfoInternal
 {
 public:
@@ -141,7 +135,6 @@ public:
 	char pad_00A8[92]; //0x00A8
 	Vector3 PitchPivotPosition; //0x0104
 };
-
 
 class Info
 {
