@@ -60,6 +60,24 @@ struct Vector3
 	{
 		return Vector3(x * other.x, y * other.y, z * other.z);
 	}
+	
+	constexpr Vector3 operator+=(const Vector3& other) 
+	{
+		x += other.x;
+		y += other.y;
+		z += other.z;
+		return *this;
+	}
+	
+	constexpr Vector3 operator-=(const Vector3& other)
+	{
+		x -= other.x;
+		y -= other.y;
+		z -= other.z;
+		return *this;
+	}
+
+
 
 	constexpr Vector3 operator*(const float scale) const noexcept
 	{
@@ -78,7 +96,7 @@ struct Vector3
 		throw std::out_of_range("Index out of range for Vector3");
 	}
 
-	float LengthTo(const Vector3& other) const noexcept
+	float Distance(const Vector3& other) const noexcept
 	{
 		return std::sqrtf((x - other.x) * (x - other.x) +
 			(y - other.y) * (y - other.y) +
@@ -101,8 +119,13 @@ struct Vector3
 	{
 		return std::sqrtf(x * x + y * y + z * z) ;
 	}
+
+	float Dot(const Vector3& Other) const {
+		return x * Other.x + y * Other.y + z * Other.z;
+	}
 	float x, y, z;
 
+	
 };
 
 struct Vector2

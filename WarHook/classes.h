@@ -60,14 +60,34 @@ public:
 	uint8_t TeamNum; //0x1100
 	char pad_1101[15]; //0x1101
 	class Info* UnitInfo; //0x1110
+	char pad_1118[168]; //0x1118
+	class Armory* Weapons; //0x11C0
+	char pad_11C8[3064];
+	class Velocity* velocity;
 }; //Size: 0x1118
+
+class Velocity
+{
+public:
+	char pad_11C8[86];
+	Vector3 velocity;
+};
+
+class WTF
+{
+public:
+	char pad_000[376];
+	float crosshair_distance;
+	float penetration_distance;
+};
 
 class HUD
 {
 public:
 	char pad_0000[641]; //0x0000
 	bool air_to_air_indicator;
-	char pad_0282[10]; //0x0282
+	bool draw_plane_aim_indicator;
+	char pad_0282[9]; //0x0283
 	bool penetration_crosshair; //0x028C
 	bool unit_glow; //0x028D
 	bool gunner_sight_distance; //0x028E
@@ -123,6 +143,12 @@ public:
 	Vector3 Forward; //0x0090
 	Vector3 Up; //0x009C
 	Vector3 Left; //0x00A8
+	char pad_00B4[500]; //0x00B4
+	class WeaponInfo* WeaponInfo; //0x02A8
+	char pad_02B0[628]; //0x02B0
+	uint8_t ActiveSlot; //0x0524
+	uint8_t SelectedSlot; //0x0525
+
 }; //Size: 0x0894
 
 class WeaponPositionInfoInternal
@@ -134,6 +160,37 @@ public:
 	Vector3 YawPivotPosition; //0x009C
 	char pad_00A8[92]; //0x00A8
 	Vector3 PitchPivotPosition; //0x0104
+};
+
+class WeaponInfo
+{
+public:
+	char pad_0000[160];
+	class AmmoList* AmmoHandler;
+	
+//	Ammo* GetAmmo(int currentslot){
+//		uintptr_t ammoptr = *(uintptr_t*)((uintptr_t)this + 0xA0 + 0xB0 * currentslot);
+//		return *(Ammo**)ammoptr;
+//	}
+};
+
+class AmmoList
+{
+public:
+	class Ammo* Ammo; //0x0000
+};
+
+class Ammo
+{
+public:
+	char* Name; //0x0000
+	char pad_0008[4]; //0x0008
+	float Mass; //0x000C
+	float Caliber; //0x0010
+	float Length; //0x0014
+	float Distance; //0x0018
+	char pad_001C[28]; //0x001C
+	float Speed; //0x0038
 };
 
 class Info

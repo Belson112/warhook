@@ -1,4 +1,189 @@
 #include "main.h"
+#include <D3Dcompiler.h>
+
+typedef void(__stdcall* D3D11DrawIndexedHook) (ID3D11DeviceContext* pContext, UINT IndexCount, UINT StartIndexLocation, INT BaseVertexLocation);
+typedef HRESULT(__stdcall* D3D11ResizeBuffersHook) (IDXGISwapChain* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags);
+typedef void(__stdcall* D3D11DrawIndexedInstancedHook) (ID3D11DeviceContext* pContext, UINT IndexCountPerInstance, UINT InstanceCount, UINT StartIndexLocation, INT BaseVertexLocation, UINT StartInstanceLocation);
+
+
+D3D11DrawIndexedHook phookD3D11DrawIndexed = NULL;
+D3D11ResizeBuffersHook phookD3D11ResizeBuffers = NULL;
+D3D11DrawIndexedInstancedHook phookD3D11DrawIndexedInstanced = NULL;
+
+
+ID3D11DepthStencilState* g_depthEnabled;
+ID3D11DepthStencilState* g_depthDisabled;
+
+HRESULT __stdcall hookD3D11ResizeBuffers(IDXGISwapChain* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
+{
+	ImGui_ImplDX11_InvalidateDeviceObjects();
+	if (nullptr != RenderTargetView) { RenderTargetView->Release(); RenderTargetView = nullptr; }
+
+	HRESULT toReturn = phookD3D11ResizeBuffers(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
+
+	ImGui_ImplDX11_CreateDeviceObjects();
+
+	return toReturn;
+}
+
+void __stdcall hookD3D11DrawIndexed(ID3D11DeviceContext* pContext, UINT IndexCount, UINT StartIndexLocation, INT BaseVertexLocation)
+{
+	pContext->IAGetVertexBuffers(0, 1, &veBuffer, &Stride, &veBufferOffset);
+	if (veBuffer != NULL)
+		veBuffer->GetDesc(&vedesc);
+	if (veBuffer != NULL) { veBuffer->Release(); veBuffer = NULL; }
+
+	
+	pContext->IAGetIndexBuffer(&inBuffer, &inFormat, &inOffset);
+	if (inBuffer != NULL)
+		inBuffer->GetDesc(&indesc);
+	if (inBuffer != NULL) { inBuffer->Release(); inBuffer = NULL; }
+
+	pContext->PSGetConstantBuffers(pscStartSlot, 1, &pscBuffer);
+	if (pscBuffer != NULL)
+		pscBuffer->GetDesc(&pscdesc);
+	if (pscBuffer != NULL) { pscBuffer->Release(); pscBuffer = NULL; }
+
+	
+	pContext->VSGetConstantBuffers(vscStartSlot, 1, &vscBuffer);
+	if (vscBuffer != NULL)
+		vscBuffer->GetDesc(&vscdesc);
+	if (vscBuffer != NULL) { vscBuffer->Release(); vscBuffer = NULL; }
+	
+	/*if (GetAsyncKeyState(VK_NUMPAD1) & 1)
+	{
+		nstride += 1;
+		printf("Stride: %d \n", nstride);
+	}
+	if (GetAsyncKeyState(VK_NUMPAD4) & 1)
+	{
+		nstride -= 1;
+		printf("Stride: %d \n", nstride);
+	}
+	if (GetAsyncKeyState(VK_NUMPAD2) & 1)
+	{
+		count += 1;
+		printf("Count: %d \n", count);
+	}
+	if (GetAsyncKeyState(VK_NUMPAD5) & 1)
+	{
+		count -= 1;
+		printf("Count: %d \n", count);
+	}
+	*/
+	if (remove_nature == true || remove_smokes == true)
+	{
+		if (remove_nature)
+		{
+			if (Stride == 12 || IndexCount == 0 || IndexCount == 7 || IndexCount == 13 || IndexCount == 21 || IndexCount == 19 || IndexCount == 44 || IndexCount == 53)
+			{
+				pContext->RSSetState(DEPTHBIASState_FALSE); 
+
+				phookD3D11DrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation); 
+
+				pContext->RSSetState(DEPTHBIASState_TRUE);
+			}
+		}
+		if (remove_smokes)
+		{
+			if (Stride == 0 && IndexCount == 6)
+			{
+				pContext->RSSetState(DEPTHBIASState_FALSE); 
+
+				phookD3D11DrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation); 
+
+				pContext->RSSetState(DEPTHBIASState_TRUE);
+			}
+		}
+
+	}
+	if (remove_nature)
+	{
+		if (Stride == 12 || IndexCount == 0 || IndexCount == 7 || IndexCount == 13 || IndexCount == 21 || IndexCount == 19 || IndexCount == 44 || IndexCount == 53)
+			return;
+		
+	}
+	if (remove_smokes)
+	{
+		if (Stride == 0 && IndexCount == 6)
+			return;
+	}
+
+	return phookD3D11DrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
+
+}
+
+void __stdcall hookD3D11DrawIndexedInstanced(ID3D11DeviceContext* pContext, UINT IndexCountPerInstance, UINT InstanceCount, UINT StartIndexLocation, INT BaseVertexLocation, UINT StartInstanceLocation)
+{
+
+
+	
+	pContext->IAGetVertexBuffers(0, 1, &veBuffer, &Stride, &veBufferOffset);
+	if (veBuffer != NULL)
+		veBuffer->GetDesc(&vedesc);
+	if (veBuffer != NULL) { veBuffer->Release(); veBuffer = NULL; }
+
+	
+	pContext->IAGetIndexBuffer(&inBuffer, &inFormat, &inOffset);
+	if (inBuffer != NULL)
+		inBuffer->GetDesc(&indesc);
+	if (inBuffer != NULL) { inBuffer->Release(); inBuffer = NULL; }
+
+	
+	pContext->PSGetConstantBuffers(pscStartSlot, 1, &pscBuffer);
+	if (pscBuffer != NULL)
+		pscBuffer->GetDesc(&pscdesc);
+	if (pscBuffer != NULL) { pscBuffer->Release(); pscBuffer = NULL; }
+
+	
+	pContext->VSGetConstantBuffers(vscStartSlot, 1, &vscBuffer);
+	if (vscBuffer != NULL)
+		vscBuffer->GetDesc(&vscdesc);
+	if (vscBuffer != NULL) { vscBuffer->Release(); vscBuffer = NULL; }
+
+	if (remove_nature == true || remove_smokes == true)
+	{
+		if (remove_nature) {
+			if (Stride == 12 || IndexCountPerInstance == 0 || IndexCountPerInstance == 7 || IndexCountPerInstance == 13 || IndexCountPerInstance == 21 || IndexCountPerInstance == 19 || IndexCountPerInstance == 44 || IndexCountPerInstance == 53)
+			{
+				pContext->RSSetState(DEPTHBIASState_FALSE); //depthbias off
+
+				phookD3D11DrawIndexedInstanced(pContext, IndexCountPerInstance, InstanceCount, StartIndexLocation, BaseVertexLocation, StartInstanceLocation); //redraw
+
+				pContext->RSSetState(DEPTHBIASState_TRUE); //depthbias true
+			}
+		}
+		if (remove_smokes)
+		{
+			if (Stride == 0 && IndexCountPerInstance == 6)
+			{
+				pContext->RSSetState(DEPTHBIASState_FALSE); //depthbias off
+
+				phookD3D11DrawIndexedInstanced(pContext, IndexCountPerInstance, InstanceCount, StartIndexLocation, BaseVertexLocation, StartInstanceLocation); //redraw
+
+				pContext->RSSetState(DEPTHBIASState_TRUE); //depthbias true
+			}
+		}
+		
+	
+	}
+	
+	
+	
+
+	if (remove_nature == true)
+	{
+		if (Stride == 12 || IndexCountPerInstance == 0 || IndexCountPerInstance == 7 || IndexCountPerInstance == 13 || IndexCountPerInstance == 21 || IndexCountPerInstance == 19 || IndexCountPerInstance == 44 || IndexCountPerInstance == 53)
+			return; 
+	}	
+	if (remove_smokes == true)
+	{
+		if (Stride == 0 && IndexCountPerInstance == 6)
+			return; 
+	}
+
+	return phookD3D11DrawIndexedInstanced(pContext, IndexCountPerInstance, InstanceCount, StartIndexLocation, BaseVertexLocation, StartInstanceLocation);
+}
 
 void SetupImGuiStyle()
 {
@@ -93,6 +278,12 @@ float Distance(Vector3 target, Vector3 localplayer)
 	return distance;
 }
 
+float Distance(Vector2 target, Vector2 localplayer) {
+	float distance = std::sqrtf((target.x - localplayer.x) * (target.x - localplayer.x) +
+		(target.y - localplayer.y) * (target.y - localplayer.y));
+	return distance;
+}
+
 bool WorldToScreen(const Vector3& in, Vector3& out) noexcept
 {
 	const uintptr_t mat_addr = *(uintptr_t*)(cGame + 0x750) + 0x258; // Update if boxes fucked up
@@ -121,7 +312,6 @@ bool WorldToScreen(const Vector3& in, Vector3& out) noexcept
 
 	return true;
 }
-
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 Present oPresent;
@@ -150,7 +340,7 @@ void InitImGui()
 }
 
 
-void draw3dbox(Matrix3x3 rotation, Vector3 bbmin, Vector3 bbmax, Vector3 position, float Invulnerable)
+void draw3dbox(Matrix3x3 rotation, Vector3 bbmin, Vector3 bbmax, Vector3 position, float Invulnerable, Vector3& bbcenter)
 {
 	Vector3 ax[6];
 	ax[0] = Vector3{ rotation[0][0], rotation[0][1], rotation[0][2] }.Scale(bbmin.x);
@@ -200,7 +390,8 @@ void draw3dbox(Matrix3x3 rotation, Vector3 bbmin, Vector3 bbmax, Vector3 positio
 		if (WorldToScreen(v[i], p1) && WorldToScreen(v[4 + i], p2))
 			draw->AddLine({ p1.x, p1.y }, { p2.x, p2.y }, color2, 2.f);
 	}
-
+	//center of the box 
+	bbcenter = (v[0] + v[6]) / 2;
 }
 
 void draw3dbox(Matrix3x3 rotation, Vector3 bbmin, Vector3 bbmax, Vector3 position)
@@ -312,7 +503,6 @@ void ESP()
 	Player* localplayer = *(Player**)(modulebase + offsets[1]);
 	bool isScoping = *(bool*)(modulebase + offsets[4]);
 	char* curmap = *(char**)(cGame + 0x1d0);
-
 	if (localplayer->IsinHangar())
 	{
 		if (localplayer->ControlledUnit == NULL or localplayer->ControlledUnit->UnitInfo == NULL)
@@ -326,6 +516,7 @@ void ESP()
 		const Vector3& bbmax = localplayer->ControlledUnit->BBMax;
 		
 		draw3dbox(rotation, bbmin, bbmax, position);
+
 		return;
 	}
 
@@ -357,7 +548,7 @@ void ESP()
 		}
 
 		auto position = unit->Position;
-		auto distance = Distance(position, localplayer->ControlledUnit->Position);
+		auto distance = Distance(position, local->Position);
 		auto name = u8"";
 		name = (char8_t*)(unit->UnitInfo->ShortName);
 		auto text = std::format("{} - {}m", (char*)name, (int)distance, 2);
@@ -367,7 +558,8 @@ void ESP()
 		int count = (16 - (unit->ReloadTimer));
 		constexpr float stat = (10.f / 16);
 		float progress = ((stat * count) * 0.1f);
-
+		Vector3 bbcenter{};
+		
 		if (player)
 		{
 			if (!unit->UnitState == 0 or !player->IsAlive())
@@ -376,8 +568,11 @@ void ESP()
 			const Vector3& bbmin = unit->BBMin;
 			const Vector3& bbmax = unit->BBMax;
 
-			draw3dbox(rotation, bbmin, bbmax, position, unit->Invulnerable);
+			
+			draw3dbox(rotation, bbmin, bbmax, position, unit->Invulnerable, bbcenter);
 
+
+			
 			Vector3 origin = { };
 			if (WorldToScreen(position, origin))
 			{
@@ -440,15 +635,17 @@ void ESP()
 					if (unit->UnitInfo->isPlane())
 						continue;
 				}
-				
+
 
 				const auto& rotation = unit->RotationMatrix;
 				const Vector3& bbmin = unit->BBMin;
 				const Vector3& bbmax = unit->BBMax;
 				text = std::format("BOT - {}m", (int)distance);
 				size = ImGui::CalcTextSize(text.c_str());
-				draw3dbox(rotation, bbmin, bbmax, position, unit->Invulnerable);
+				
+				draw3dbox(rotation, bbmin, bbmax, position, unit->Invulnerable, bbcenter);
 
+				///////////////////////////////////////////////////////////////////////////////////////////
 				Vector3 origin = { };
 				if (WorldToScreen(position, origin))
 				{
@@ -506,22 +703,42 @@ void ESP()
 void HudChanger()
 {
 	const auto draw = ImGui::GetBackgroundDrawList();
+	UnitList list = *(UnitList*)(cGame + 0x390);
+	WTF* addr = *(WTF**)(cGame + 0x538);
+	if (!list.unitList)
+		return;
+	HUD* HudInfo = *(HUD**)(modulebase + offsets[2]);
 	if (change_hud)
 	{
-		UnitList list = *(UnitList*)(cGame + 0x390);
-		if (!list.unitList)
-			return;
-		HUD* HudInfo = *(HUD**)(modulebase + offsets[2]);
 
-		//HudInfo->penetration_crosshair = (force_crosshair ? true : false);
+		HudInfo->penetration_crosshair = true;
+		addr->crosshair_distance = 2000.f;
+		addr->penetration_distance = 2000.f;
 
-		//HudInfo->unit_glow = (force_outline ? true : false);
+		HudInfo->unit_glow = true;
 
-		//HudInfo->gunner_sight_distance = (force_distance ? true : false);
+		HudInfo->gunner_sight_distance = true;
 
-		//HudInfo->air_to_air_indicator = (force_air_to_air ? true : false);
+		HudInfo->air_to_air_indicator = true;
 		
-		HudInfo->show_bombsight = (force_bombsight ? true : false);
+		HudInfo->draw_plane_aim_indicator = true;
+		
+		HudInfo->show_bombsight = true;
+	}
+	else {
+		HudInfo->penetration_crosshair = true;
+		addr->crosshair_distance = 900.f;
+		addr->penetration_distance = 650.f;
+
+		HudInfo->unit_glow = false;
+
+		HudInfo->gunner_sight_distance = false;
+
+		HudInfo->air_to_air_indicator = true;
+
+		HudInfo->draw_plane_aim_indicator = true;
+
+		HudInfo->show_bombsight = false;
 	}
 	return;
 }
@@ -552,29 +769,54 @@ void ZoomMod()
 	return;
 }
 
-//void showWarningwindow()
-//{
-//	auto text1 = "THIS SOFTWARE DISTRIBUTED FOR FREE.";
-//	auto text2 = "IF YOU PAID FOR THIS SOFTWARE - YOU GOT SCAMMED.";
-//	ImGui::SetNextWindowSize({ scrsize.x, scrsize.y });
-//	ImGui::SetNextWindowPos({ 0, 0 });
-//	auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar;
-//	ImGui::Begin("WARNING", nullptr, flags);
-//	ImGui::PushFont(big_main);
-//	auto textWidth1 = ImGui::CalcTextSize(text1).x;
-//	ImGui::SetCursorPos(ImVec2((scrsize.x - textWidth1) * 0.5f, 100));
-//	ImGui::Text(text1);
-//	auto textWidth2 = ImGui::CalcTextSize(text2).x;
-//	ImGui::SetCursorPosX((scrsize.x - textWidth2) * 0.5f);
-//	ImGui::Text(text2);
-//	ImGui::SetCursorPosX((scrsize.x - 225) * 0.5f);
-//	ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.f);
-//	ImGui::Checkbox("I understood that", &agree);
-//	ImGui::PopStyleVar();
-//	ImGui::PopFont();
-//	ImGui::End();
-//}
+void showWarningwindow()
+{
+	auto text1 = "THIS SOFTWARE DISTRIBUTED FOR FREE.";
+	auto text2 = "IF YOU PAID FOR THIS SOFTWARE - YOU GOT SCAMMED.";
+	ImGui::SetNextWindowSize({ scrsize.x, scrsize.y });
+	ImGui::SetNextWindowPos({ 0, 0 });
+	auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar;
+	ImGui::Begin("WARNING", nullptr, flags);
+	ImGui::PushFont(big_main);
+	auto textWidth1 = ImGui::CalcTextSize(text1).x;
+	ImGui::SetCursorPos(ImVec2((scrsize.x - textWidth1) * 0.5f, 100));
+	ImGui::Text(text1);
+	auto textWidth2 = ImGui::CalcTextSize(text2).x;
+	ImGui::SetCursorPosX((scrsize.x - textWidth2) * 0.5f);
+	ImGui::Text(text2);
+	ImGui::SetCursorPosX((scrsize.x - 225) * 0.5f);
+	ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.f);
+	ImGui::Checkbox("I understood that", &agree);
+	ImGui::PopStyleVar();
+	ImGui::PopFont();
+	ImGui::End();
+}
+
 bool init = false;
+
+ID3D11RasterizerState* rwState;
+ID3D11RasterizerState* rsState;
+
+enum eDepthState
+{
+	ENABLED,
+	DISABLED,
+	READ_NO_WRITE,
+	NO_READ_NO_WRITE,
+	_DEPTH_COUNT
+};
+
+ID3D11PixelShader* psCrimson = NULL;
+ID3D11PixelShader* psYellow = NULL;
+ID3D11ShaderResourceView* ShaderResourceView;
+
+ID3D11DepthStencilState* myDepthStencilStates[static_cast<int>(eDepthState::_DEPTH_COUNT)];
+
+void SetDepthStencilState(eDepthState aState)
+{	
+	pContext->OMSetDepthStencilState(myDepthStencilStates[aState], 1);
+}
+
 HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags)
 {
 	if (!init)
@@ -592,14 +834,67 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 			oWndProc = (WNDPROC)SetWindowLongPtr(window, GWLP_WNDPROC, (LONG_PTR)WndProc);
 			InitImGui();
 			init = true;
+
+			////////////////////////////////////////////////////////////////////////////////
+			D3D11_DEPTH_STENCIL_DESC depthStencilDesc;
+			depthStencilDesc.DepthEnable = TRUE;
+			depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+			depthStencilDesc.DepthFunc = D3D11_COMPARISON_ALWAYS;
+			depthStencilDesc.StencilEnable = FALSE;
+			depthStencilDesc.StencilReadMask = 0xFF;
+			depthStencilDesc.StencilWriteMask = 0xFF;
+			// Stencil operations if pixel is front-facing
+			depthStencilDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+			depthStencilDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+			depthStencilDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+			depthStencilDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+			// Stencil operations if pixel is back-facing
+			depthStencilDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+			depthStencilDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+			depthStencilDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+			depthStencilDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+			pDevice->CreateDepthStencilState(&depthStencilDesc, &DepthStencilState_FALSE);
+
+			//create depthbias rasterizer state
+			D3D11_RASTERIZER_DESC rasterizer_desc;
+			ZeroMemory(&rasterizer_desc, sizeof(rasterizer_desc));
+			rasterizer_desc.FillMode = D3D11_FILL_SOLID;
+			rasterizer_desc.CullMode = D3D11_CULL_NONE; //D3D11_CULL_FRONT;
+			rasterizer_desc.FrontCounterClockwise = false;
+			float bias = 1000.0f;
+			float bias_float = static_cast<float>(-bias);
+			bias_float /= 10000.0f;
+			rasterizer_desc.DepthBias = DEPTH_BIAS_D32_FLOAT(*(DWORD*)&bias_float);
+			rasterizer_desc.SlopeScaledDepthBias = 0.0f;
+			rasterizer_desc.DepthBiasClamp = 0.0f;
+			rasterizer_desc.DepthClipEnable = true;
+			rasterizer_desc.ScissorEnable = false;
+			rasterizer_desc.MultisampleEnable = false;
+			rasterizer_desc.AntialiasedLineEnable = false;
+			pDevice->CreateRasterizerState(&rasterizer_desc, &DEPTHBIASState_FALSE);
+
+			//create normal rasterizer state
+			D3D11_RASTERIZER_DESC nrasterizer_desc;
+			ZeroMemory(&nrasterizer_desc, sizeof(nrasterizer_desc));
+			nrasterizer_desc.FillMode = D3D11_FILL_SOLID;
+			//nrasterizer_desc.CullMode = D3D11_CULL_BACK; //flickering
+			nrasterizer_desc.CullMode = D3D11_CULL_NONE;
+			nrasterizer_desc.FrontCounterClockwise = false;
+			nrasterizer_desc.DepthBias = 0.0f;
+			nrasterizer_desc.SlopeScaledDepthBias = 0.0f;
+			nrasterizer_desc.DepthBiasClamp = 0.0f;
+			nrasterizer_desc.DepthClipEnable = true;
+			nrasterizer_desc.ScissorEnable = false;
+			nrasterizer_desc.MultisampleEnable = false;
+			nrasterizer_desc.AntialiasedLineEnable = false;
+			pDevice->CreateRasterizerState(&nrasterizer_desc, &DEPTHBIASState_TRUE);
+			/////////////////////////////////////////////////////////////////////////////////
 		}
 
 		else
 			return oPresent(pSwapChain, SyncInterval, Flags);
 	}
-
-
-
+	
 	ImGui_ImplDX11_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 
@@ -613,13 +908,13 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 	}
 
 
-	/*if (!agree)
-		showWarningwindow();*/
+	if(!agree)
+		showWarningwindow();
 
 	ImGui::GetIO().MouseDrawCursor = open;
 
-	//if (agree)
-	//{
+	if (agree)
+	{
 		if (open)
 		{
 			ImGui::PushFont(med_main);
@@ -644,11 +939,8 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 				ImGui::Checkbox("Show planes", &show_planes);
 				ImGui::SetCursorPosX(5.f);
 				ImGui::Checkbox("Show offscreen arrows", &show_offscreen);
-				ImGui::PopStyleVar();
-				ImGui::PopStyleVar();
 				if (show_offscreen)
 				{
-
 					ImGui::SameLine();
 					ImGui::ColorEdit3("Arrow color", off_color, ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop | ImGuiColorEditFlags_NoOptions | ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel);
 					ImGui::Indent();
@@ -657,6 +949,12 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 					ImGui::SliderFloat("Radius", &off_radius, 0.0f, 1000.0f);
 					ImGui::PopStyleVar();
 				}
+				//ImGui::SetCursorPosX(5.f);
+				//ImGui::Checkbox("Remove nature", &remove_nature);
+				ImGui::SetCursorPosX(5.f);
+				ImGui::Checkbox("Remove smokes", &remove_smokes);
+				ImGui::PopStyleVar();
+				ImGui::PopStyleVar();
 				ImGui::EndTabItem();
 			}
 
@@ -681,34 +979,93 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 				ImGui::SliderFloat("##shadow", &shadow_mult, 20.0f, 250.0f);
 				ImGui::SetCursorPosX(5.f);
 				ImGui::Checkbox("Change HUD", &change_hud);
-				if (change_hud)
+				/*if (change_hud)
 				{
 					ImGui::SetCursorPosX(5.f);
 					ImGui::Checkbox("Enable bomb crosshair", &force_bombsight);
 					ImGui::SetCursorPosX(5.f);
 					ImGui::Checkbox("Enable Air-To_air indicator", &force_air_to_air);
 					ImGui::SetCursorPosX(5.f);
-				//	ImGui::Checkbox("Enable enemy outline (when hovered)", &force_outline);
-				//	ImGui::SetCursorPosX(5.f);
-				//	ImGui::Checkbox("Show distance in scope", &force_distance);
+					ImGui::Checkbox("Enable enemy outline (when hovered)", &force_outline);
+					ImGui::SetCursorPosX(5.f);
+					ImGui::Checkbox("Show distance in scope", &force_distance);
+					ImGui::SetCursorPosX(5.f);
+					ImGui::Checkbox("Show penetrarion indicator", &force_crosshair);
 				}
-				
+				*/
 				ImGui::PopStyleVar();
 				ImGui::PopStyleVar();
 				ImGui::EndTabItem();
 
 			}
 			ImGui::SetNextItemWidth(180.f);
-			if (ImGui::BeginTabItem("			  Debug", &tab_debug, ImGuiTabItemFlags_NoCloseButton))
+			if (ImGui::BeginTabItem("		 Support Dev", &tab_support, ImGuiTabItemFlags_NoCloseButton))
 			{
 				ImGui::SetCursorPosX(5.f);
-				ImGui::Text("For dev only :)");
+				ImGui::Text("Current version: 1.5");
 				ImGui::SetCursorPosX(5.f);
-				ImGui::Text("Current version: 1.4.0");
+				ImGui::Text("Support Dev with Ko-Fi (PayPal)");
+				ImGui::SameLine();
+				if (ImGui::Button("Copy link##1"))
+				{
+					ImGui::LogToClipboard();
+					ImGui::LogText("https:\/\/ko-fi.com\/monkrel");
+					ImGui::LogFinish();
+				}
+				ImGui::SetCursorPosX(5.f);
+				ImGui::Text("Support Dev with BuyMeACoffee (CC)");
+				ImGui::SameLine();
+				if (ImGui::Button("Copy link##2"))
+				{
+					ImGui::LogToClipboard();
+					ImGui::LogText("https:\/\/www.buymeacoffee.com\/monkrel");
+					ImGui::LogFinish();
+				}
+				ImGui::Indent();
+				ImGui::SetCursorPosX(5.f);
+				ImGui::Text("Crypto:");
+				ImGui::SetCursorPosX(5.f);
+				ImGui::Text("Bitcoin");
+				ImGui::SameLine();
+				if (ImGui::Button("Copy address##btc"))
+				{
+					ImGui::LogToClipboard();
+					ImGui::LogText("bc1qstz3rpazwm70f95mmj53360rqxqz5qzn2vlm8r");
+					ImGui::LogFinish();
+				}
+				ImGui::SetCursorPosX(5.f);
+				ImGui::Text("Ethereum");
+				ImGui::SameLine();
+				if (ImGui::Button("Copy address##eth"))
+				{
+					ImGui::LogToClipboard();
+					ImGui::LogText("0xf15357E8ABDB25f303D5D0610aBF803A162b8a03");
+					ImGui::LogFinish();
+				}
+				ImGui::SetCursorPosX(5.f);
+				ImGui::Text("Tron (TRX)");
+				ImGui::SameLine();
+				if (ImGui::Button("Copy address##trx"))
+				{
+					ImGui::LogToClipboard();
+					ImGui::LogText("TNHZFDcT8JVmPRqtWg3s11TK6rCQ5eYhwW");
+					ImGui::LogFinish();
+				}
+				ImGui::Indent();
+				ImGui::SetCursorPosX(5.f);
+				ImGui::Text("If you want to support me with other method - contact me on Discord:");
+				ImGui::SetCursorPosX(5.f);
+				if (ImGui::Button("Copy discord"))
+				{
+					ImGui::LogToClipboard();
+					ImGui::LogText("monkrel#0001");
+					ImGui::LogFinish();
+				}
+
 				ImGui::EndTabItem();
 			}
 			ImGui::EndTabBar();
-			if (!tab_esp && !tab_misc && !tab_debug)
+			if (!tab_esp && !tab_misc && !tab_support)
 			{
 				if (def_tab)
 				{
@@ -732,7 +1089,7 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 					if (ImGui::IsItemClicked())
 					{
 						tab_esp = true;
-						tab_debug = true;
+						tab_support = true;
 						tab_misc = true;
 						def_tab = false;
 					}
@@ -743,7 +1100,7 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 			ImGui::End();
 		}
 
-	//}
+	}
 	if (esp_status)
 		ESP();
 	HudChanger();
@@ -753,18 +1110,25 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 	return oPresent(pSwapChain, SyncInterval, Flags);
 }
+LRESULT CALLBACK DXGIMsgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) { return DefWindowProc(hwnd, uMsg, wParam, lParam); }
 
 DWORD WINAPI MainThread(LPVOID lpReserved)
 {
+
+	
 	bool init_hook = false;
 	do
 	{
 		if (kiero::init(kiero::RenderType::D3D11) == kiero::Status::Success)
 		{
 			kiero::bind(8, (void**)&oPresent, hkPresent);
+			kiero::bind(73, (void**)&phookD3D11DrawIndexed, hookD3D11DrawIndexed);
+			kiero::bind(13, (void**)&phookD3D11ResizeBuffers, hookD3D11ResizeBuffers);
+			kiero::bind(81, (void**)&phookD3D11DrawIndexedInstanced, hookD3D11DrawIndexedInstanced);
 			init_hook = true;
 		}
 	} while (!init_hook);
+
 	return TRUE;
 }
 
