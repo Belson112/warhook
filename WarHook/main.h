@@ -56,12 +56,6 @@ ID3D11RasterizerState* DEPTHBIASState_TRUE;
 ID3D11RasterizerState* DEPTHBIASState_ORIG;
 #define DEPTH_BIAS_D32_FLOAT(d) (d/(1/pow(2,23)))
 
-//viewport
-UINT vps = 1;
-D3D11_VIEWPORT viewport;
-float ScreenCenterX;
-float ScreenCenterY;
-
 //create rendertarget
 ID3D11RenderTargetView* RenderTargetView = NULL;
 
@@ -92,19 +86,3 @@ UINT pssrStartSlot ;
 ID3D11Resource* Resource;
 D3D11_SHADER_RESOURCE_VIEW_DESC Descr;
 D3D11_TEXTURE2D_DESC texdesc;
-
-//wndproc
-bool ShowMenu = false;
-static WNDPROC OriginalWndProcHandler = nullptr;
-
-//logger, misc
-int countnum = 4;
-int countStride = 12;
-int countIndexCount = 18;
-int countpscdescByteWidth = 768;
-int countindescByteWidth = 16777216;
-int countvedescByteWidth = 67108864;
-
-wchar_t reportValue[256];
-#define SAFE_RELEASE(x) if (x) { x->Release(); x = NULL; }
-HRESULT hr;
