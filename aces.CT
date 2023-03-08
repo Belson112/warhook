@@ -2,111 +2,66 @@
 <CheatTable CheatEngineTableVersion="42">
   <CheatEntries>
     <CheatEntry>
-      <ID>8</ID>
-      <Description>"player[i] name"</Description>
+      <ID>54</ID>
+      <Description>"Ammo name"</Description>
       <ShowAsSigned>0</ShowAsSigned>
       <VariableType>String</VariableType>
       <Length>32</Length>
       <Unicode>0</Unicode>
       <CodePage>0</CodePage>
       <ZeroTerminate>1</ZeroTerminate>
-      <Address>aces.exe +0x41E8DC8</Address>
+      <Address>aces.exe + 0x46ED0A0</Address>
       <Offsets>
-        <Offset>b0</Offset>
         <Offset>0</Offset>
-      </Offsets>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>4</ID>
-      <Description>"player[i] unit state"</Description>
-      <ShowAsSigned>0</ShowAsSigned>
-      <VariableType>Byte</VariableType>
-      <Address>aces.exe + 0x41E8DC8</Address>
-      <Offsets>
-        <Offset>1240</Offset>
+        <Offset>0</Offset>
+        <Offset>0</Offset>
+        <Offset>a0+B0*0</Offset>
+        <Offset>2A8</Offset>
+        <Offset>8</Offset>
+        <Offset>1F8</Offset>
+        <Offset>11C0</Offset>
         <Offset>710</Offset>
-        <Offset>0</Offset>
       </Offsets>
     </CheatEntry>
     <CheatEntry>
       <ID>16</ID>
-      <Description>"cGame [&lt;aces.exe&gt; + 0x466B398] 48 8B 05 ? ? ? ? F2 0F 10 4F 08"</Description>
+      <Description>"cGame [&lt;aces.exe&gt; + 0x46dcfe8] 48 8B 05 ? ? ? ? F2 0F 10 4F 08"</Description>
       <ShowAsHex>1</ShowAsHex>
       <ShowAsSigned>0</ShowAsSigned>
       <VariableType>4 Bytes</VariableType>
-      <Address>aces.exe + 0x466B398</Address>
+      <Address>aces.exe + 0x46dcfe8</Address>
     </CheatEntry>
     <CheatEntry>
-      <ID>17</ID>
-      <Description>"unitName"</Description>
+      <ID>41</ID>
+      <Description>"Height"</Description>
       <ShowAsSigned>0</ShowAsSigned>
-      <VariableType>String</VariableType>
-      <Length>32</Length>
-      <Unicode>0</Unicode>
-      <CodePage>0</CodePage>
-      <ZeroTerminate>1</ZeroTerminate>
-      <Address>aces.exe + 0x466B398</Address>
-      <Offsets>
-        <Offset>0</Offset>
-        <Offset>0</Offset>
-        <Offset>10F0</Offset>
-        <Offset>0</Offset>
-        <Offset>390</Offset>
-      </Offsets>
+      <VariableType>4 Bytes</VariableType>
+      <Address>aces.exe +0x4871C60+0x4</Address>
     </CheatEntry>
     <CheatEntry>
-      <ID>18</ID>
-      <Description>"[i] Unit name"</Description>
+      <ID>43</ID>
+      <Description>"IsScoping 88 0d ? ? ? ? 48 8b 05 ? ? ? ? 48 8b 80"</Description>
       <ShowAsSigned>0</ShowAsSigned>
-      <VariableType>String</VariableType>
-      <Length>32</Length>
-      <Unicode>0</Unicode>
-      <CodePage>0</CodePage>
-      <ZeroTerminate>1</ZeroTerminate>
-      <Address>aces.exe + 0x466B398</Address>
-      <Offsets>
-        <Offset>0</Offset>
-        <Offset>18</Offset>
-        <Offset>10F0</Offset>
-        <Offset>0</Offset>
-        <Offset>390</Offset>
-      </Offsets>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>19</ID>
-      <Description>"[i] Unit type"</Description>
-      <ShowAsSigned>0</ShowAsSigned>
-      <VariableType>String</VariableType>
-      <Length>32</Length>
-      <Unicode>0</Unicode>
-      <CodePage>0</CodePage>
-      <ZeroTerminate>1</ZeroTerminate>
-      <Address>aces.exe + 0x466B398</Address>
-      <Offsets>
-        <Offset>0</Offset>
-        <Offset>30</Offset>
-        <Offset>10F0</Offset>
-        <Offset>0</Offset>
-        <Offset>390</Offset>
-      </Offsets>
+      <VariableType>Byte</VariableType>
+      <Address>aces.exe + 0x4714d65</Address>
     </CheatEntry>
     <CheatEntry>
       <ID>35</ID>
-      <Description>"LocalPlayer 48 8B 15 ? ? ? ? 48 85 D2 74 ? 41 BA ? ? ? ? F6 82 ? ? ? ? ? 75"</Description>
+      <Description>"LocalPlayer 48 8b 2d ? ? ? ? 48 85 ed 74 ? f6 85 ? ? ? ? ? 74"</Description>
       <GroupHeader>1</GroupHeader>
       <CheatEntries>
         <CheatEntry>
           <ID>0</ID>
-          <Description>"localp [&lt;aces.exe&gt; + 0x46D3EA0]"</Description>
+          <Description>"localp [&lt;aces.exe&gt; + 0x4743F58]"</Description>
           <ShowAsSigned>0</ShowAsSigned>
           <VariableType>String</VariableType>
           <Length>128</Length>
           <Unicode>0</Unicode>
           <CodePage>0</CodePage>
           <ZeroTerminate>1</ZeroTerminate>
-          <Address>aces.exe + 0x46D3EA0</Address>
+          <Address>aces.exe + 0x4743F58</Address>
           <Offsets>
-            <Offset>b0</Offset>
+            <Offset>A8</Offset>
           </Offsets>
         </CheatEntry>
         <CheatEntry>
@@ -114,9 +69,9 @@
           <Description>"pointer to localplayer team"</Description>
           <ShowAsSigned>0</ShowAsSigned>
           <VariableType>Byte</VariableType>
-          <Address>aces.exe + 0x46D3EA0</Address>
+          <Address>aces.exe +0x4743F58</Address>
           <Offsets>
-            <Offset>10E0</Offset>
+            <Offset>1100</Offset>
             <Offset>710</Offset>
           </Offsets>
         </CheatEntry>
@@ -129,11 +84,11 @@
           <Unicode>0</Unicode>
           <CodePage>0</CodePage>
           <ZeroTerminate>1</ZeroTerminate>
-          <Address>aces.exe + 0x46D3EA0</Address>
+          <Address>aces.exe + 0x4743F58</Address>
           <Offsets>
             <Offset>0</Offset>
             <Offset>460</Offset>
-            <Offset>710</Offset>
+            <Offset>6E0</Offset>
           </Offsets>
         </CheatEntry>
         <CheatEntry>
@@ -141,10 +96,10 @@
           <Description>"localplayer state"</Description>
           <ShowAsSigned>0</ShowAsSigned>
           <VariableType>Byte</VariableType>
-          <Address>aces.exe + 0x46D3EA0</Address>
+          <Address>aces.exe + 0x4743F58</Address>
           <Offsets>
-            <Offset>1088</Offset>
-            <Offset>710</Offset>
+            <Offset>FF8</Offset>
+            <Offset>6E0</Offset>
           </Offsets>
         </CheatEntry>
         <CheatEntry>
@@ -156,12 +111,12 @@
           <Unicode>0</Unicode>
           <CodePage>0</CodePage>
           <ZeroTerminate>1</ZeroTerminate>
-          <Address>aces.exe +  0x46D3EA0</Address>
+          <Address>aces.exe + 0x4743F58</Address>
           <Offsets>
             <Offset>0</Offset>
             <Offset>18</Offset>
-            <Offset>10F0</Offset>
-            <Offset>710</Offset>
+            <Offset>1060</Offset>
+            <Offset>6E0</Offset>
           </Offsets>
         </CheatEntry>
         <CheatEntry>
@@ -173,12 +128,12 @@
           <Unicode>0</Unicode>
           <CodePage>0</CodePage>
           <ZeroTerminate>1</ZeroTerminate>
-          <Address>aces.exe + 0x46D3EA0</Address>
+          <Address>aces.exe +0x4743F58</Address>
           <Offsets>
             <Offset>0</Offset>
             <Offset>20</Offset>
-            <Offset>10F0</Offset>
-            <Offset>710</Offset>
+            <Offset>1060</Offset>
+            <Offset>6E0</Offset>
           </Offsets>
         </CheatEntry>
         <CheatEntry>
@@ -187,9 +142,9 @@
           <ShowAsSigned>0</ShowAsSigned>
           <Color>0000FF</Color>
           <VariableType>Float</VariableType>
-          <Address>aces.exe +  0x4593A18</Address>
+          <Address>aces.exe +  0x46F20A0</Address>
           <Offsets>
-            <Offset>9E0</Offset>
+            <Offset>9F8</Offset>
             <Offset>710</Offset>
           </Offsets>
         </CheatEntry>
@@ -198,10 +153,10 @@
           <Description>"X"</Description>
           <ShowAsSigned>0</ShowAsSigned>
           <VariableType>Float</VariableType>
-          <Address>aces.exe +  0x46D3EA0</Address>
+          <Address>aces.exe +  0x4743F58</Address>
           <Offsets>
-            <Offset>9E4</Offset>
-            <Offset>710</Offset>
+            <Offset>958</Offset>
+            <Offset>6E0</Offset>
           </Offsets>
         </CheatEntry>
         <CheatEntry>
@@ -209,31 +164,64 @@
           <Description>"Y"</Description>
           <ShowAsSigned>0</ShowAsSigned>
           <VariableType>Float</VariableType>
-          <Address>aces.exe +  0x46D3EA0</Address>
+          <Address>aces.exe +  0x4743F58</Address>
           <Offsets>
-            <Offset>9e8</Offset>
-            <Offset>710</Offset>
+            <Offset>960</Offset>
+            <Offset>6E0</Offset>
           </Offsets>
         </CheatEntry>
       </CheatEntries>
     </CheatEntry>
     <CheatEntry>
-      <ID>40</ID>
-      <Description>"Width 89 05 ? ? ? ? 8b 0d ? ? ? ? 89 0d ? ? ? ? 8b 15 ? ? ? ? f3 0f 2a c2 f3 0f 11 05 ? ? ? ? 8b 35"</Description>
+      <ID>57</ID>
+      <Description>"penetration_cross"</Description>
       <ShowAsSigned>0</ShowAsSigned>
-      <VariableType>4 Bytes</VariableType>
-      <Address>aces.exe+0x47FFAA0</Address>
+      <VariableType>Float</VariableType>
+      <Address>aces.exe + 0x4684440</Address>
+      <Offsets>
+        <Offset>17c</Offset>
+        <Offset>538</Offset>
+      </Offsets>
     </CheatEntry>
     <CheatEntry>
-      <ID>41</ID>
-      <Description>"Height"</Description>
+      <ID>45</ID>
+      <Description>"BROKEN PlayerList 48 8b 0d ? ? ? ? 89 c0 48 8b 1c c1 48 85 db 74 ? 48 8b 05"</Description>
+      <ShowAsHex>1</ShowAsHex>
       <ShowAsSigned>0</ShowAsSigned>
       <VariableType>4 Bytes</VariableType>
-      <Address>aces.exe + 0x47FFAA4</Address>
+      <Address>aces.exe + 0x46EC050</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>56</ID>
+      <Description>"prediction_cross"</Description>
+      <ShowAsSigned>0</ShowAsSigned>
+      <VariableType>Float</VariableType>
+      <Address>aces.exe + 0x4684440</Address>
+      <Offsets>
+        <Offset>178</Offset>
+        <Offset>538</Offset>
+      </Offsets>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>17</ID>
+      <Description>"unitName"</Description>
+      <ShowAsSigned>0</ShowAsSigned>
+      <VariableType>String</VariableType>
+      <Length>32</Length>
+      <Unicode>0</Unicode>
+      <CodePage>0</CodePage>
+      <ZeroTerminate>1</ZeroTerminate>
+      <Address>aces.exe + 0x46dcfe8</Address>
+      <Offsets>
+        <Offset>A8</Offset>
+        <Offset>1008</Offset>
+        <Offset>0</Offset>
+        <Offset>368</Offset>
+      </Offsets>
     </CheatEntry>
     <CheatEntry>
       <ID>42</ID>
-      <Description>"Version 32 2e 32 33 2e 30 2e 35 ? ? ? ? 00 00 00 00 00 00 00 00 01 00"</Description>
+      <Description>"Version"</Description>
       <ShowAsSigned>0</ShowAsSigned>
       <VariableType>String</VariableType>
       <Length>10</Length>
@@ -243,31 +231,8 @@
       <Address>aces.exe+46c3380</Address>
     </CheatEntry>
     <CheatEntry>
-      <ID>43</ID>
-      <Description>"IsScoping 88 0d ? ? ? ? 48 8b 05 ? ? ? ? 48 8b 80"</Description>
-      <ShowAsSigned>0</ShowAsSigned>
-      <VariableType>Byte</VariableType>
-      <Address>aces.exe + 0x46CD730</Address>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>45</ID>
-      <Description>"PlayerList 48 8b 0d ? ? ? ? 89 c0 48 8b 1c c1 48 85 db 74 ? 48 8b 05"</Description>
-      <ShowAsHex>1</ShowAsHex>
-      <ShowAsSigned>0</ShowAsSigned>
-      <VariableType>4 Bytes</VariableType>
-      <Address>aces.exe + 0x46D3E80</Address>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>46</ID>
-      <Description>"HudInfo  [&lt;aces.exe&gt;+0x4528530] 48 8B 0D ? ? ? ? 83 B9 ? ? ? ? ? 7C 4E"</Description>
-      <ShowAsHex>1</ShowAsHex>
-      <ShowAsSigned>0</ShowAsSigned>
-      <VariableType>4 Bytes</VariableType>
-      <Address>aces.exe+0x46632F0</Address>
-    </CheatEntry>
-    <CheatEntry>
       <ID>50</ID>
-      <Description>"ViewMatrix f3 0f 11 81 ? ? ? ? f3 0f 10 44 24 ? f3 0f 11 81 ? ? ? ? f3 0f 10 44 24 ? f3 0f 11 81 ? ? ? ? f3 0f 10 44 24 ? f3 0f 11 81 ? ? ? ? f3 0f 10 44 24 ? f3 0f 11 81 ? ? ? ? f3 0f 10 44 24 ? f3 0f 11 81 ? ? ? ? f3 0f 10 44 24"</Description>
+      <Description>"ViewMatrix 0F 28 05 ?? ?? ?? ?? 0F 28 0D ?? ?? ?? ?? 0F 28 D8"</Description>
       <ShowAsSigned>0</ShowAsSigned>
       <VariableType>Float</VariableType>
       <Address>aces.exe + 0x466B398</Address>
@@ -277,11 +242,60 @@
       </Offsets>
     </CheatEntry>
     <CheatEntry>
-      <ID>51</ID>
-      <Description>"Thermal scope 8b 4c 0a ? 85 c9 74 ? 48 8b 2d"</Description>
+      <ID>40</ID>
+      <Description>"Width 89 05 ? ? ? ? 8b 0d ? ? ? ? 89 0d ? ? ? ? 8b 15 ? ? ? ? f3 0f 2a c2 f3 0f 11 05 ? ? ? ? 8b 35"</Description>
       <ShowAsSigned>0</ShowAsSigned>
       <VariableType>4 Bytes</VariableType>
-      <Address>20B847A0F10</Address>
+      <Address>aces.exe+0x4871C60</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>18</ID>
+      <Description>"[i] Unit name"</Description>
+      <ShowAsSigned>0</ShowAsSigned>
+      <VariableType>String</VariableType>
+      <Length>32</Length>
+      <Unicode>0</Unicode>
+      <CodePage>0</CodePage>
+      <ZeroTerminate>1</ZeroTerminate>
+      <Address>aces.exe +0x46dcfe8</Address>
+      <Offsets>
+        <Offset>0</Offset>
+        <Offset>18</Offset>
+        <Offset>1060</Offset>
+        <Offset>0</Offset>
+        <Offset>368</Offset>
+      </Offsets>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>19</ID>
+      <Description>"[i] Unit type"</Description>
+      <ShowAsSigned>0</ShowAsSigned>
+      <VariableType>Byte</VariableType>
+      <Address>aces.exe + 0x46dcfe8</Address>
+      <Offsets>
+        <Offset>1050</Offset>
+        <Offset>0</Offset>
+        <Offset>368</Offset>
+      </Offsets>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>60</ID>
+      <Description>"HudInfo 48 8b 0d ? ? ? ? 80 b9 ? ? ? ? ? 0f 95 c2 80 be ? ? ? ? ? 0f 95 c3 20 d3 0f 57 c0 0f 2e 86 ? ? ? ? 0f 93 c2 41 b6"</Description>
+      <ShowAsHex>1</ShowAsHex>
+      <ShowAsSigned>0</ShowAsSigned>
+      <VariableType>4 Bytes</VariableType>
+      <Address>aces.exe+46D5258</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>62</ID>
+      <Description>"DagorOptics f3 45 0f 10 90 ? ? ? ? 84 db"</Description>
+      <ShowAsSigned>0</ShowAsSigned>
+      <VariableType>Float</VariableType>
+      <Address>aces.exe  + 0x46dcfe8</Address>
+      <Offsets>
+        <Offset>16C</Offset>
+        <Offset>4c8</Offset>
+      </Offsets>
     </CheatEntry>
   </CheatEntries>
   <UserdefinedSymbols/>

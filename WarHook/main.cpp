@@ -262,11 +262,13 @@ offsets[1] = LocalPlayer
 offsets[2] = HudInfo
 offsets[3] = ScreenWidth
 offsets[4] = IsScoping
+offsets[5] = ViewMatrix
 */
 
 uintptr_t cGame = *(uintptr_t*)(modulebase + offsets[0]);
 const int scrW = *(int*)(modulebase + offsets[3]);
 const int scrH = *(int*)(modulebase + offsets[3]+0x4);
+const uintptr_t mat_addr = (uintptr_t)(modulebase + offsets[5]);
 
 const Vector2 scrsize = { (float)scrW,(float)scrH };
 
@@ -286,7 +288,6 @@ float Distance(Vector2 target, Vector2 localplayer) {
 
 bool WorldToScreen(const Vector3& in, Vector3& out) noexcept
 {
-	const uintptr_t mat_addr = *(uintptr_t*)(cGame + 0x750) + 0x258; // Update if boxes fucked up
 	const ViewMatrix& mat = *(ViewMatrix*)mat_addr;
 
 	float width = mat[0][3] * in.x + mat[1][3] * in.y + mat[2][3] * in.z + mat[3][3];
@@ -500,12 +501,12 @@ LRESULT __stdcall WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
 void ESP()
 {
-	UnitList list = *(UnitList*)(cGame + 0x390);
+	UnitList list = *(UnitList*)(cGame + 0x368);
 	if (!list.unitList)
 		return;
 	Player* localplayer = *(Player**)(modulebase + offsets[1]);
 	bool isScoping = *(bool*)(modulebase + offsets[4]);
-	char* curmap = *(char**)(cGame + 0x1d0);
+	char* curmap = *(char**)(cGame + 0x1C0);
 	if (localplayer->IsinHangar())
 	{
 		if (localplayer->ControlledUnit == NULL or localplayer->ControlledUnit->UnitInfo == NULL)
@@ -526,12 +527,13 @@ void ESP()
 	const auto screen_center_x = scrsize.x / 2;
 	const auto screen_center_y = scrsize.y / 2;
 
-	for (auto i = 0; i < list.unitCount; ++i)
+	std::uint16_t unitCount = *(std::uint16_t*)(cGame + 0x378);
+	for (auto i = 0; i < unitCount; ++i)
 	{
 		const auto unit = list.unitList->units[i];
 		if (!unit)
 			continue;
-		const auto player = unit->PlayerInfo;
+		Player* player = (unit->PlayerInfo == NULL) ? NULL : unit->PlayerInfo;
 
 		const auto local = localplayer->ControlledUnit;
 		if (!local)
@@ -558,7 +560,7 @@ void ESP()
 		auto size = ImGui::CalcTextSize(text.c_str());
 		
 		//reload line implementation
-		int count = (16 - (unit->ReloadTimer));
+		int count = (16 - (unit->VisualReload));
 		constexpr float stat = (10.f / 16);
 		float progress = ((stat * count) * 0.1f);
 		Vector3 bbcenter{};
@@ -706,8 +708,8 @@ void ESP()
 void HudChanger()
 {
 	const auto draw = ImGui::GetBackgroundDrawList();
-	UnitList list = *(UnitList*)(cGame + 0x390);
-	WTF* addr = *(WTF**)(cGame + 0x538);
+	UnitList list = *(UnitList*)(cGame + 0x368);
+	WTF* addr = *(WTF**)(cGame + 0x4c8);
 	if (!list.unitList)
 		return;
 	HUD* HudInfo = *(HUD**)(modulebase + offsets[2]);
@@ -730,7 +732,7 @@ void HudChanger()
 	}
 	else {
 		HudInfo->penetration_crosshair = true;
-		addr->crosshair_distance = 900.f;
+		addr->crosshair_distance = 1000.f;
 		addr->penetration_distance = 650.f;
 
 		HudInfo->unit_glow = false;
@@ -748,7 +750,7 @@ void HudChanger()
 
 void ZoomMod()
 {
-	UnitList list = *(UnitList*)(cGame + 0x390);
+	UnitList list = *(UnitList*)(cGame + 0x368);
 	if (!list.unitList)
 		return;
 	Player* localplayer = *(Player**)(modulebase + offsets[1]);
