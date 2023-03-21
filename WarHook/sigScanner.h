@@ -29,7 +29,7 @@ std::uint8_t* Scan(const char* signature) noexcept
 		return bytes;
 	};
 
-	static const auto handle = ::GetModuleHandleA("aces.exe");
+	static const auto handle = GetModuleHandle(NULL);
 
 	if (!handle)
 		return nullptr;

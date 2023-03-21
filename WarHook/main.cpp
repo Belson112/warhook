@@ -1,6 +1,27 @@
 #include "main.h"
 #include <D3Dcompiler.h>
 
+
+
+uintptr_t modulebase = (uintptr_t)GetModuleHandle(NULL);
+std::vector<uintptr_t> offsets = GetOffsets(signatures);
+
+/*
+offsets[0] = cGame
+offsets[1] = LocalPlayer
+offsets[2] = HudInfo
+offsets[3] = ScreenWidth
+offsets[4] = IsScoping
+offsets[5] = ViewMatrix
+*/
+
+uintptr_t cGame = *(uintptr_t*)(modulebase + offsets[0]);
+int scrW = *(int*)(modulebase + offsets[3]);
+int scrH = *(int*)(modulebase + offsets[3] + 0x4);
+const uintptr_t mat_addr = (uintptr_t)(modulebase + offsets[5]);
+
+Vector2 scrsize = { (float)scrW,(float)scrH };
+
 typedef void(__stdcall* D3D11DrawIndexedHook) (ID3D11DeviceContext* pContext, UINT IndexCount, UINT StartIndexLocation, INT BaseVertexLocation);
 typedef HRESULT(__stdcall* D3D11ResizeBuffersHook) (IDXGISwapChain* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags);
 typedef void(__stdcall* D3D11DrawIndexedInstancedHook) (ID3D11DeviceContext* pContext, UINT IndexCountPerInstance, UINT InstanceCount, UINT StartIndexLocation, INT BaseVertexLocation, UINT StartInstanceLocation);
@@ -14,17 +35,54 @@ D3D11DrawIndexedInstancedHook phookD3D11DrawIndexedInstanced = NULL;
 ID3D11DepthStencilState* g_depthEnabled;
 ID3D11DepthStencilState* g_depthDisabled;
 
+Present oPresent;
+HWND window = NULL;
+WNDPROC oWndProc;
+ID3D11Device* pDevice = NULL;
+ID3D11DeviceContext* pContext = NULL;
+ID3D11RenderTargetView* mainRenderTargetView;
+ImFont* def_main;
+ImFont* med_main;
+ImFont* big_main;
+
 HRESULT __stdcall hookD3D11ResizeBuffers(IDXGISwapChain* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
 {
-	ImGui_ImplDX11_InvalidateDeviceObjects();
-	if (nullptr != RenderTargetView) { RenderTargetView->Release(); RenderTargetView = nullptr; }
+	if (mainRenderTargetView) {
+		pContext->OMSetRenderTargets(0, 0, 0);
+		mainRenderTargetView->Release();
+	}
 
-	HRESULT toReturn = phookD3D11ResizeBuffers(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
+	HRESULT hr = phookD3D11ResizeBuffers(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
 
-	ImGui_ImplDX11_CreateDeviceObjects();
+	ID3D11Texture2D* pBuffer;
+	pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&pBuffer);
 
-	return toReturn;
+	pDevice->CreateRenderTargetView(pBuffer, NULL, &mainRenderTargetView);
+
+	pBuffer->Release();
+
+	pContext->OMSetRenderTargets(1, &mainRenderTargetView, NULL);
+
+	D3D11_VIEWPORT vp;
+	vp.Width = Width;
+	vp.Height = Height;
+	vp.MinDepth = 0.0f;
+	vp.MaxDepth = 1.0f;
+	vp.TopLeftX = 0;
+	vp.TopLeftY = 0;
+
+	pContext->RSSetViewports(1, &vp);
+
+	ImGuiIO& io = ImGui::GetIO();
+	io.DisplaySize = ImVec2((float)Width, (float)Height);
+	io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
+	ImGui::Render();
+
+	scrsize = { (float)Width, (float)Height };
+	
+	return hr;
 }
+
 
 void __stdcall hookD3D11DrawIndexed(ID3D11DeviceContext* pContext, UINT IndexCount, UINT StartIndexLocation, INT BaseVertexLocation)
 {
@@ -253,24 +311,7 @@ void SetupImGuiStyle()
 
 }
 
-uintptr_t modulebase = (uintptr_t)GetModuleHandle(NULL);
-std::vector<uintptr_t> offsets = GetOffsets(signatures);
 
-/*
-offsets[0] = cGame
-offsets[1] = LocalPlayer
-offsets[2] = HudInfo
-offsets[3] = ScreenWidth
-offsets[4] = IsScoping
-offsets[5] = ViewMatrix
-*/
-
-uintptr_t cGame = *(uintptr_t*)(modulebase + offsets[0]);
-const int scrW = *(int*)(modulebase + offsets[3]);
-const int scrH = *(int*)(modulebase + offsets[3]+0x4);
-const uintptr_t mat_addr = (uintptr_t)(modulebase + offsets[5]);
-
-const Vector2 scrsize = { (float)scrW,(float)scrH };
 
 float Distance(Vector3 target, Vector3 localplayer)
 {
@@ -315,15 +356,7 @@ bool WorldToScreen(const Vector3& in, Vector3& out) noexcept
 }
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-Present oPresent;
-HWND window = NULL;
-WNDPROC oWndProc;
-ID3D11Device* pDevice = NULL;
-ID3D11DeviceContext* pContext = NULL;
-ID3D11RenderTargetView* mainRenderTargetView;
-ImFont* def_main;
-ImFont* med_main;
-ImFont* big_main;
+
 
 void InitImGui()
 {
@@ -707,7 +740,6 @@ void ESP()
 
 void HudChanger()
 {
-	const auto draw = ImGui::GetBackgroundDrawList();
 	UnitList list = *(UnitList*)(cGame + 0x368);
 	WTF* addr = *(WTF**)(cGame + 0x4c8);
 	if (!list.unitList)

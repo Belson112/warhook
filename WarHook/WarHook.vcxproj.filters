@@ -142,6 +142,9 @@
     <ClInclude Include="sigScanner.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="kiero\minhook\dll_resources\resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="kiero\minhook\dll_resources\MinHook.def">
