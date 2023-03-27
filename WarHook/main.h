@@ -15,6 +15,7 @@ bool tab_misc = false;
 bool tab_support = false;
 bool def_tab = true;
 bool def_choice = false;
+bool block_input = false;
 
 bool esp_status = false;
 bool remove_nature = false;

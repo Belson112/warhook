@@ -523,11 +523,22 @@ void drawOffscreenCentered(Vector3 origin, float distance)
 
 LRESULT __stdcall WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 
-	if (open)
+	switch (block_input)
 	{
-		ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
-		return true;
+		case(true):
+			if (open)
+			{
+				ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
+				return true;
+			};
+		
+		case(false):
+			if (true && ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam))
+			{
+				return true;
+			};
 	}
+
 
 	return CallWindowProc(oWndProc, hWnd, uMsg, wParam, lParam);
 }
@@ -741,39 +752,33 @@ void ESP()
 void HudChanger()
 {
 	UnitList list = *(UnitList*)(cGame + 0x368);
-	WTF* addr = *(WTF**)(cGame + 0x4c8);
+	WTF* addr = *(WTF**)(cGame + 0x4B0);
 	if (!list.unitList)
 		return;
 	HUD* HudInfo = *(HUD**)(modulebase + offsets[2]);
+	
+	HudInfo->penetration_crosshair = true;
+	HudInfo->air_to_air_indicator = true;
+	HudInfo->draw_plane_aim_indicator = true;
 	if (change_hud)
 	{
 
-		HudInfo->penetration_crosshair = true;
 		addr->crosshair_distance = 2000.f;
 		addr->penetration_distance = 2000.f;
 
 		HudInfo->unit_glow = true;
 
 		HudInfo->gunner_sight_distance = true;
-
-		HudInfo->air_to_air_indicator = true;
-		
-		HudInfo->draw_plane_aim_indicator = true;
 		
 		HudInfo->show_bombsight = true;
 	}
 	else {
-		HudInfo->penetration_crosshair = true;
 		addr->crosshair_distance = 1000.f;
 		addr->penetration_distance = 650.f;
 
 		HudInfo->unit_glow = false;
 
 		HudInfo->gunner_sight_distance = false;
-
-		HudInfo->air_to_air_indicator = true;
-
-		HudInfo->draw_plane_aim_indicator = true;
 
 		HudInfo->show_bombsight = false;
 	}
@@ -810,6 +815,7 @@ void showWarningwindow()
 {
 	auto text1 = "THIS SOFTWARE DISTRIBUTED FOR FREE.";
 	auto text2 = "IF YOU PAID FOR THIS SOFTWARE - YOU GOT SCAMMED.";
+	auto text3 = "Change click handle in \"Settings\" tab (Block user input)";
 	ImGui::SetNextWindowSize({ scrsize.x, scrsize.y });
 	ImGui::SetNextWindowPos({ 0, 0 });
 	auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar;
@@ -821,6 +827,10 @@ void showWarningwindow()
 	auto textWidth2 = ImGui::CalcTextSize(text2).x;
 	ImGui::SetCursorPosX((scrsize.x - textWidth2) * 0.5f);
 	ImGui::Text(text2);
+	ImGui::SetCursorPosX((scrsize.x - 225) * 0.5f);
+	auto textWidth3 = ImGui::CalcTextSize(text3).x;
+	ImGui::SetCursorPosX((scrsize.x - textWidth3) * 0.5f);
+	ImGui::Text(text3);
 	ImGui::SetCursorPosX((scrsize.x - 225) * 0.5f);
 	ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.f);
 	ImGui::Checkbox("I understood that", &agree);
@@ -843,9 +853,6 @@ enum eDepthState
 	_DEPTH_COUNT
 };
 
-ID3D11PixelShader* psCrimson = NULL;
-ID3D11PixelShader* psYellow = NULL;
-ID3D11ShaderResourceView* ShaderResourceView;
 
 ID3D11DepthStencilState* myDepthStencilStates[static_cast<int>(eDepthState::_DEPTH_COUNT)];
 
@@ -986,8 +993,6 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 					ImGui::SliderFloat("Radius", &off_radius, 0.0f, 1000.0f);
 					ImGui::PopStyleVar();
 				}
-				//ImGui::SetCursorPosX(5.f);
-				//ImGui::Checkbox("Remove nature", &remove_nature);
 				ImGui::SetCursorPosX(5.f);
 				ImGui::Checkbox("Remove smokes", &remove_smokes);
 				ImGui::PopStyleVar();
@@ -996,7 +1001,7 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 			}
 
 			ImGui::SetNextItemWidth(180.f);
-			if (ImGui::BeginTabItem("				Misc", &tab_misc, ImGuiTabItemFlags_NoCloseButton))
+			if (ImGui::BeginTabItem("\t\t\t\tMisc", &tab_misc, ImGuiTabItemFlags_NoCloseButton))
 			{
 				ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.f);
 				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 4,5 });
@@ -1016,87 +1021,39 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 				ImGui::SliderFloat("##shadow", &shadow_mult, 20.0f, 250.0f);
 				ImGui::SetCursorPosX(5.f);
 				ImGui::Checkbox("Change HUD", &change_hud);
-				/*if (change_hud)
-				{
-					ImGui::SetCursorPosX(5.f);
-					ImGui::Checkbox("Enable bomb crosshair", &force_bombsight);
-					ImGui::SetCursorPosX(5.f);
-					ImGui::Checkbox("Enable Air-To_air indicator", &force_air_to_air);
-					ImGui::SetCursorPosX(5.f);
-					ImGui::Checkbox("Enable enemy outline (when hovered)", &force_outline);
-					ImGui::SetCursorPosX(5.f);
-					ImGui::Checkbox("Show distance in scope", &force_distance);
-					ImGui::SetCursorPosX(5.f);
-					ImGui::Checkbox("Show penetrarion indicator", &force_crosshair);
-				}
-				*/
 				ImGui::PopStyleVar();
 				ImGui::PopStyleVar();
 				ImGui::EndTabItem();
 
 			}
 			ImGui::SetNextItemWidth(180.f);
-			if (ImGui::BeginTabItem("		 Support Dev", &tab_support, ImGuiTabItemFlags_NoCloseButton))
+			if (ImGui::BeginTabItem("\t\t\tSettings", &tab_support, ImGuiTabItemFlags_NoCloseButton))
 			{
 				ImGui::SetCursorPosX(5.f);
-				ImGui::Text("Current version: 1.5");
+				ImGui::Text("Current version: 1.6.5");
 				ImGui::SetCursorPosX(5.f);
-				ImGui::Text("Support Dev with Ko-Fi (PayPal)");
-				ImGui::SameLine();
-				if (ImGui::Button("Copy link##1"))
-				{
-					ImGui::LogToClipboard();
-					ImGui::LogText("https:\/\/ko-fi.com\/monkrel");
-					ImGui::LogFinish();
-				}
+				ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.f);
+				ImGui::Checkbox("Block user input when menu opened", &block_input);
+				ImGui::PopStyleVar();
 				ImGui::SetCursorPosX(5.f);
-				ImGui::Text("Support Dev with BuyMeACoffee (CC)");
-				ImGui::SameLine();
-				if (ImGui::Button("Copy link##2"))
-				{
-					ImGui::LogToClipboard();
-					ImGui::LogText("https:\/\/www.buymeacoffee.com\/monkrel");
-					ImGui::LogFinish();
-				}
+				ImGui::Text("Support author:");
+				std::vector<std::pair<std::string, std::string>> support{
+					{"Ko-Fi (PayPal)","https:\/\/ko-fi.com\/monkrel"},
+					{"BuyMeACoffee (CC)","https:\/\/www.buymeacoffee.com\/monkrel"},
+					{"Bitcoin","bc1qstz3rpazwm70f95mmj53360rqxqz5qzn2vlm8r"},
+					{"Ethereum","0xf15357E8ABDB25f303D5D0610aBF803A162b8a03"},
+					{"Tron (TRX)","TNHZFDcT8JVmPRqtWg3s11TK6rCQ5eYhwW"}
+				};
+				int i = 0;
 				ImGui::Indent();
-				ImGui::SetCursorPosX(5.f);
-				ImGui::Text("Crypto:");
-				ImGui::SetCursorPosX(5.f);
-				ImGui::Text("Bitcoin");
-				ImGui::SameLine();
-				if (ImGui::Button("Copy address##btc"))
-				{
-					ImGui::LogToClipboard();
-					ImGui::LogText("bc1qstz3rpazwm70f95mmj53360rqxqz5qzn2vlm8r");
-					ImGui::LogFinish();
-				}
-				ImGui::SetCursorPosX(5.f);
-				ImGui::Text("Ethereum");
-				ImGui::SameLine();
-				if (ImGui::Button("Copy address##eth"))
-				{
-					ImGui::LogToClipboard();
-					ImGui::LogText("0xf15357E8ABDB25f303D5D0610aBF803A162b8a03");
-					ImGui::LogFinish();
-				}
-				ImGui::SetCursorPosX(5.f);
-				ImGui::Text("Tron (TRX)");
-				ImGui::SameLine();
-				if (ImGui::Button("Copy address##trx"))
-				{
-					ImGui::LogToClipboard();
-					ImGui::LogText("TNHZFDcT8JVmPRqtWg3s11TK6rCQ5eYhwW");
-					ImGui::LogFinish();
-				}
-				ImGui::Indent();
-				ImGui::SetCursorPosX(5.f);
-				ImGui::Text("If you want to support me with other method - contact me on Discord:");
-				ImGui::SetCursorPosX(5.f);
-				if (ImGui::Button("Copy discord"))
-				{
-					ImGui::LogToClipboard();
-					ImGui::LogText("monkrel#0001");
-					ImGui::LogFinish();
+				for (auto& [key, value] : support) {
+					ImGui::Text("%s", key.c_str());
+					ImGui::SameLine();
+					ImGui::PushID(i++);
+					if (ImGui::Button("Copy")) {
+						ImGui::SetClipboardText(value.c_str());
+					}
+					ImGui::PopID();
 				}
 
 				ImGui::EndTabItem();
